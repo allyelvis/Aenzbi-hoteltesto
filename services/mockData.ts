@@ -1,5 +1,5 @@
 
-import { Room, RoomStatus, MenuItem, Sale } from '../types';
+import { Room, RoomStatus, MenuItem, Sale, Supplier, InventoryItem, PurchaseOrder, PurchaseOrderStatus } from '../types';
 
 const today = new Date();
 const tomorrow = new Date(today);
@@ -36,4 +36,42 @@ export const mockSales: Sale[] = [
     { id: 'S002', date: '2023-10-27T12:30:00Z', items: [{ name: 'Salmon Fillet', category: 'Main Course', quantity: 1, price: 28.00 }, { name: 'Truffle Fries', category: 'Appetizer', quantity: 1, price: 12.50 }], total: 40.50 },
     { id: 'S003', date: '2023-10-28T19:00:00Z', items: [{ name: 'Cheesecake', category: 'Dessert', quantity: 2, price: 9.00 }, { name: 'Espresso', category: 'Beverage', quantity: 2, price: 4.00 }], total: 26.00 },
     { id: 'S004', date: '2023-10-29T20:15:00Z', items: [{ name: 'Ribeye Steak', category: 'Main Course', quantity: 1, price: 35.00 }], total: 35.00 },
+];
+
+// New Mock Data for Inventory Management
+
+export const mockSuppliers: Supplier[] = [
+    { id: 1, name: 'Fresh Produce Co.', contactPerson: 'Mark Green', email: 'mark@freshproduce.com', phone: '555-0101' },
+    { id: 2, name: 'Prime Meats Ltd.', contactPerson: 'Susan Beef', email: 'susan@primemeats.com', phone: '555-0102' },
+    { id: 3, name: 'Beverage World', contactPerson: 'Chris Waters', email: 'chris@bevworld.com', phone: '555-0103' },
+];
+
+export const mockInventoryItems: InventoryItem[] = [
+    { id: 101, name: 'Potatoes', category: 'Vegetable', quantityInStock: 50, unit: 'kg', reorderLevel: 20, supplierId: 1 },
+    { id: 102, name: 'Tomatoes', category: 'Vegetable', quantityInStock: 30, unit: 'kg', reorderLevel: 15, supplierId: 1 },
+    { id: 201, name: 'Ribeye Steak', category: 'Meat', quantityInStock: 25, unit: 'units', reorderLevel: 10, supplierId: 2 },
+    { id: 202, name: 'Salmon Fillet', category: 'Fish', quantityInStock: 20, unit: 'units', reorderLevel: 10, supplierId: 2 },
+    { id: 301, name: 'Whiskey', category: 'Spirits', quantityInStock: 15, unit: 'liters', reorderLevel: 5, supplierId: 3 },
+    { id: 302, name: 'Coffee Beans', category: 'Beverage', quantityInStock: 40, unit: 'kg', reorderLevel: 10, supplierId: 3 },
+];
+
+export const mockPurchaseOrders: PurchaseOrder[] = [
+    { 
+        id: 'PO-001', 
+        supplierId: 1, 
+        orderDate: '2023-11-01T10:00:00Z', 
+        expectedDeliveryDate: '2023-11-03T10:00:00Z', 
+        items: [{ itemId: 101, quantity: 30, unitPrice: 2.5 }, { itemId: 102, quantity: 20, unitPrice: 3 }],
+        status: PurchaseOrderStatus.Completed,
+        totalCost: 135
+    },
+    { 
+        id: 'PO-002', 
+        supplierId: 2, 
+        orderDate: '2023-11-05T14:00:00Z', 
+        expectedDeliveryDate: '2023-11-07T14:00:00Z', 
+        items: [{ itemId: 201, quantity: 15, unitPrice: 20 }],
+        status: PurchaseOrderStatus.Pending,
+        totalCost: 300
+    },
 ];
