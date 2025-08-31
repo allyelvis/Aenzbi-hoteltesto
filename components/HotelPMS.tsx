@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { mockRooms } from '../services/mockData';
 import { Room, RoomStatus } from '../types';
@@ -23,8 +22,8 @@ const RoomCard: React.FC<{ room: Room; onClick: (room: Room) => void }> = ({ roo
 
     const formatDate = (dateString: string | undefined) => {
         if (!dateString) return 'N/A';
-        // FIX: Corrected typo from toLocaleDateDateString to toLocaleDateString
-        return new Date(dateString).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+        // Using a specific locale 'en-US' for consistent formatting.
+        return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
     };
 
     return (
@@ -118,11 +117,12 @@ const RoomDetailModal: React.FC<{
                     </div>
                 );
             case RoomStatus.Occupied:
+                const formatModalDate = (dateString: string) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
                 return (
                     <div className="space-y-2">
                         <p><span className="font-semibold text-gray-400">Guest:</span> {room.guest}</p>
-                        <p><span className="font-semibold text-gray-400">Check-in:</span> {new Date(room.checkIn!).toLocaleDateString(undefined, {timeZone: 'UTC'})}</p>
-                        <p><span className="font-semibold text-gray-400">Check-out:</span> {new Date(room.checkOut!).toLocaleDateString(undefined, {timeZone: 'UTC'})}</p>
+                        <p><span className="font-semibold text-gray-400">Check-in:</span> {formatModalDate(room.checkIn!)}</p>
+                        <p><span className="font-semibold text-gray-400">Check-out:</span> {formatModalDate(room.checkOut!)}</p>
                         <div className="pt-4">
                              <button onClick={() => onUpdateStatus(room.id, RoomStatus.Dirty)} className="w-full bg-warning hover:bg-amber-700 text-white font-bold py-2 rounded-lg mt-2 transition-colors">
                                 Check Out & Mark for Cleaning

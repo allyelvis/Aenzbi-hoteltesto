@@ -1,26 +1,159 @@
-
 import React, { useState } from 'react';
 import { mockMenuItems } from '../services/mockData';
 import { MenuItem, OrderItem } from '../types';
 
-const MenuItemCard: React.FC<{ item: MenuItem; onAddToOrder: (item: MenuItem) => void }> = ({ item, onAddToOrder }) => (
-    <div 
-        className="bg-base-100 rounded-lg overflow-hidden shadow-lg cursor-pointer transform hover:scale-105 transition-transform duration-200"
-        onClick={() => onAddToOrder(item)}
-    >
-        <img className="w-full h-32 object-cover" src={item.image} alt={item.name} />
-        <div className="p-4">
-            <h4 className="font-bold text-lg text-white">{item.name}</h4>
-            <p className="text-gray-400 text-sm">{item.category}</p>
-            <p className="mt-2 text-primary font-semibold">${item.price.toFixed(2)}</p>
+// Modal component for editing a menu item's image
+const EditMenuItemModal: React.FC<{
+    item: MenuItem;
+    onClose: () => void;
+    onSave: (updatedItem: MenuItem) => void;
+}> = ({ item, onClose, onSave }) => {
+    const [name, setName] = useState(item.name);
+    const [price, setPrice] = useState(item.price);
+    const [category, setCategory] = useState(item.category);
+    const [description, setDescription] = useState(item.description || '');
+    const [image, setImage] = useState(item.image);
+
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSave = () => {
+        onSave({
+            ...item,
+            name,
+            price: Number(price),
+            category,
+            description,
+            image,
+        });
+    };
+
+    const categories: ('Appetizer' | 'Main Course' | 'Dessert' | 'Beverage')[] = ['Appetizer', 'Main Course', 'Dessert', 'Beverage'];
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div className="bg-base-200 rounded-lg shadow-xl p-8 w-full max-w-lg">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-white" id="modal-title">Edit Menu Item</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl leading-none" aria-label="Close modal">&times;</button>
+                </div>
+                
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
+                    <div className="flex items-center gap-4">
+                        <img src={image} alt={name} className="w-32 h-32 object-cover rounded-lg flex-shrink-0" />
+                        <div className="flex-1">
+                            <label htmlFor="image-upload" className="text-sm text-gray-400 block mb-2">Upload new image</label>
+                            <input
+                                id="image-upload"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="w-full text-sm text-slate-500
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-full file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-primary-focus file:text-primary-content
+                                    hover:file:bg-primary cursor-pointer"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label htmlFor="item-name" className="text-sm text-gray-400 block mb-1">Item Name</label>
+                        <input id="item-name" type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary" />
+                    </div>
+
+                    <div className="flex gap-4">
+                        <div className="w-1/2">
+                             <label htmlFor="item-price" className="text-sm text-gray-400 block mb-1">Price</label>
+                             <input id="item-price" type="number" step="0.01" value={price} onChange={e => setPrice(parseFloat(e.target.value))} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary" />
+                        </div>
+                        <div className="w-1/2">
+                            <label htmlFor="item-category" className="text-sm text-gray-400 block mb-1">Category</label>
+                             <select id="item-category" value={category} onChange={e => setCategory(e.target.value as any)} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary">
+                                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label htmlFor="item-description" className="text-sm text-gray-400 block mb-1">Description</label>
+                        <textarea id="item-description" value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary"></textarea>
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-4 pt-6 border-t border-base-300 mt-6">
+                    <button onClick={onClose} className="bg-secondary hover:bg-secondary-focus text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button onClick={handleSave} className="bg-primary hover:bg-primary-focus text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
         </div>
+    );
+};
+
+
+const MenuItemCard: React.FC<{ 
+    item: MenuItem; 
+    onAddToOrder: (item: MenuItem) => void;
+    onEdit: (item: MenuItem) => void; 
+}> = ({ item, onAddToOrder, onEdit }) => (
+    <div 
+        className="bg-base-100 rounded-lg overflow-hidden shadow-lg group relative transform hover:scale-105 transition-transform duration-200"
+    >
+        {/* Clickable area for adding to order */}
+        <div 
+            className="cursor-pointer"
+            onClick={() => onAddToOrder(item)}
+        >
+            <img className="w-full h-32 object-cover" src={item.image} alt={item.name} />
+            <div className="p-4">
+                <h4 className="font-bold text-lg text-white">{item.name}</h4>
+                <p className="text-gray-400 text-sm">{item.category}</p>
+                <p className="mt-2 text-primary font-semibold">${item.price.toFixed(2)}</p>
+            </div>
+        </div>
+
+        {/* Edit Button */}
+        <button 
+            onClick={() => onEdit(item)}
+            className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+            aria-label={`Edit ${item.name}`}
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
+            </svg>
+        </button>
     </div>
 );
 
 const OrderSummary: React.FC<{ orderItems: OrderItem[]; onUpdateQuantity: (id: number, quantity: number) => void; onClear: () => void }> = ({ orderItems, onUpdateQuantity, onClear }) => {
+    const [editingItemId, setEditingItemId] = useState<number | null>(null);
     const subtotal = orderItems.reduce((acc, current) => acc + current.item.price * current.quantity, 0);
     const tax = subtotal * 0.08;
     const total = subtotal + tax;
+
+    const handleQuantityBlur = () => {
+        setEditingItemId(null);
+    };
+
+    const handleQuantityKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            setEditingItemId(null);
+        }
+    };
 
     return (
         <div className="bg-base-100 rounded-lg shadow-lg p-6 flex flex-col h-full">
@@ -35,10 +168,27 @@ const OrderSummary: React.FC<{ orderItems: OrderItem[]; onUpdateQuantity: (id: n
                                 <p className="font-semibold text-white">{item.name}</p>
                                 <p className="text-sm text-gray-400">${item.price.toFixed(2)}</p>
                             </div>
-                            <div className="flex items-center">
-                                <button onClick={() => onUpdateQuantity(item.id, Math.max(1, quantity - 1))} className="px-2 py-1 bg-secondary rounded">-</button>
-                                <span className="px-3 font-semibold">{quantity}</span>
-                                <button onClick={() => onUpdateQuantity(item.id, quantity + 1)} className="px-2 py-1 bg-secondary rounded">+</button>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => onUpdateQuantity(item.id, Math.max(1, quantity - 1))} className="w-7 h-7 bg-secondary rounded flex items-center justify-center">-</button>
+                                {editingItemId === item.id ? (
+                                    <input
+                                        type="number"
+                                        value={quantity}
+                                        onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 0)}
+                                        onBlur={handleQuantityBlur}
+                                        onKeyDown={handleQuantityKeyDown}
+                                        autoFocus
+                                        className="w-12 text-center bg-base-300 text-white font-semibold rounded-md border border-secondary"
+                                    />
+                                ) : (
+                                    <span 
+                                        onClick={() => setEditingItemId(item.id)} 
+                                        className="px-3 font-semibold cursor-pointer min-w-[3rem] text-center"
+                                    >
+                                        {quantity}
+                                    </span>
+                                )}
+                                <button onClick={() => onUpdateQuantity(item.id, quantity + 1)} className="w-7 h-7 bg-secondary rounded flex items-center justify-center">+</button>
                             </div>
                         </div>
                     ))
@@ -62,8 +212,10 @@ const OrderSummary: React.FC<{ orderItems: OrderItem[]; onUpdateQuantity: (id: n
 };
 
 export const RestaurantPOS: React.FC = () => {
+    const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [filter, setFilter] = useState<'All' | 'Appetizer' | 'Main Course' | 'Dessert' | 'Beverage'>('All');
+    const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
 
     const handleAddToOrder = (item: MenuItem) => {
         setOrderItems(prev => {
@@ -87,29 +239,58 @@ export const RestaurantPOS: React.FC = () => {
     const handleClearOrder = () => {
       setOrderItems([]);
     }
+    
+    const handleEditItem = (item: MenuItem) => {
+        setEditingItem(item);
+    };
 
-    const filteredItems = filter === 'All' ? mockMenuItems : mockMenuItems.filter(item => item.category === filter);
+    const handleCloseModal = () => {
+        setEditingItem(null);
+    };
+
+    const handleSaveItem = (updatedItem: MenuItem) => {
+        setMenuItems(prevItems =>
+            prevItems.map(item => (item.id === updatedItem.id ? updatedItem : item))
+        );
+        setEditingItem(null);
+    };
+
+    const filteredItems = filter === 'All' ? menuItems : menuItems.filter(item => item.category === filter);
     const categories: ('All' | 'Appetizer' | 'Main Course' | 'Dessert' | 'Beverage')[] = ['All', 'Appetizer', 'Main Course', 'Dessert', 'Beverage'];
 
     return (
-        <div className="flex h-[calc(100vh-10rem)] gap-6">
-            <div className="w-2/3 flex flex-col">
-                <div className="mb-4 flex space-x-2">
-                    {categories.map(cat => (
-                        <button key={cat} onClick={() => setFilter(cat)} className={`px-4 py-2 rounded-lg font-semibold transition-colors ${filter === cat ? 'bg-primary text-white' : 'bg-base-100 hover:bg-base-300'}`}>
-                            {cat}
-                        </button>
-                    ))}
+        <>
+            <div className="flex h-[calc(100vh-10rem)] gap-6">
+                <div className="w-2/3 flex flex-col">
+                    <div className="mb-4 flex space-x-2">
+                        {categories.map(cat => (
+                            <button key={cat} onClick={() => setFilter(cat)} className={`px-4 py-2 rounded-lg font-semibold transition-colors ${filter === cat ? 'bg-primary text-white' : 'bg-base-100 hover:bg-base-300'}`}>
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex-grow overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredItems.map(item => (
+                            <MenuItemCard 
+                                key={item.id} 
+                                item={item} 
+                                onAddToOrder={handleAddToOrder} 
+                                onEdit={handleEditItem}
+                            />
+                        ))}
+                    </div>
                 </div>
-                <div className="flex-grow overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredItems.map(item => (
-                        <MenuItemCard key={item.id} item={item} onAddToOrder={handleAddToOrder} />
-                    ))}
+                <div className="w-1/3">
+                    <OrderSummary orderItems={orderItems} onUpdateQuantity={handleUpdateQuantity} onClear={handleClearOrder} />
                 </div>
             </div>
-            <div className="w-1/3">
-                <OrderSummary orderItems={orderItems} onUpdateQuantity={handleUpdateQuantity} onClear={handleClearOrder} />
-            </div>
-        </div>
+            {editingItem && (
+                <EditMenuItemModal 
+                    item={editingItem}
+                    onClose={handleCloseModal}
+                    onSave={handleSaveItem}
+                />
+            )}
+        </>
     );
 };
