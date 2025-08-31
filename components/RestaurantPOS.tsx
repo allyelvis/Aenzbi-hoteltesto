@@ -1,18 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { mockMenuItems } from '../services/mockData';
 import { MenuItem, OrderItem } from '../types';
+import { generateMenuItemDescription } from '../services/geminiService';
 
-// Modal component for editing a menu item's image
-const EditMenuItemModal: React.FC<{
-    item: MenuItem;
+// Toast Notification Component
+const Toast: React.FC<{ message: string; onClose: () => void }> = ({ message, onClose }) => {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 3000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+        <div className="fixed top-24 right-8 bg-success text-white py-2 px-5 rounded-lg shadow-lg z-50 animate-fade-in-out">
+            {message}
+        </div>
+    );
+};
+
+
+// A unified modal for both adding and editing a menu item
+const MenuItemModal: React.FC<{
+    item: MenuItem | null; // null for adding a new item
     onClose: () => void;
-    onSave: (updatedItem: MenuItem) => void;
-}> = ({ item, onClose, onSave }) => {
-    const [name, setName] = useState(item.name);
-    const [price, setPrice] = useState(item.price);
-    const [category, setCategory] = useState(item.category);
-    const [description, setDescription] = useState(item.description || '');
-    const [image, setImage] = useState(item.image);
+    onSave: (item: MenuItem) => void;
+    onDelete: (id: number) => void;
+}> = ({ item, onClose, onSave, onDelete }) => {
+    const [name, setName] = useState(item?.name || '');
+    const [price, setPrice] = useState(item?.price || 0);
+    const [category, setCategory] = useState(item?.category || 'Appetizer');
+    const [description, setDescription] = useState(item?.description || '');
+    const [image, setImage] = useState(item?.image || 'https://picsum.photos/id/102/300/200');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const isNewItem = item === null;
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -24,17 +43,35 @@ const EditMenuItemModal: React.FC<{
             reader.readAsDataURL(file);
         }
     };
+    
+    const handleGenerateDescription = async () => {
+        if (!name.trim()) {
+            alert("Please enter an item name before generating a description.");
+            return;
+        }
+        setIsGenerating(true);
+        const desc = await generateMenuItemDescription(name, category);
+        setDescription(desc);
+        setIsGenerating(false);
+    };
 
     const handleSave = () => {
-        onSave({
-            ...item,
+        const savedItem: MenuItem = {
+            id: item?.id || Date.now(), // Create a new ID for new items
             name,
             price: Number(price),
             category,
             description,
             image,
-        });
+        };
+        onSave(savedItem);
     };
+    
+    const handleDelete = () => {
+        if (item && window.confirm(`Are you sure you want to delete ${item.name}?`)) {
+            onDelete(item.id);
+        }
+    }
 
     const categories: ('Appetizer' | 'Main Course' | 'Dessert' | 'Beverage')[] = ['Appetizer', 'Main Course', 'Dessert', 'Beverage'];
 
@@ -42,7 +79,7 @@ const EditMenuItemModal: React.FC<{
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <div className="bg-base-200 rounded-lg shadow-xl p-8 w-full max-w-lg">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-white" id="modal-title">Edit Menu Item</h2>
+                    <h2 className="text-2xl font-bold text-white" id="modal-title">{isNewItem ? 'Add New Menu Item' : 'Edit Menu Item'}</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl leading-none" aria-label="Close modal">&times;</button>
                 </div>
                 
@@ -85,18 +122,32 @@ const EditMenuItemModal: React.FC<{
                     </div>
 
                     <div>
-                        <label htmlFor="item-description" className="text-sm text-gray-400 block mb-1">Description</label>
+                         <div className="flex justify-between items-center mb-1">
+                            <label htmlFor="item-description" className="text-sm text-gray-400">Description</label>
+                            <button onClick={handleGenerateDescription} disabled={isGenerating} className="text-sm bg-accent hover:bg-accent-focus text-white font-semibold py-1 px-3 rounded-full disabled:bg-gray-600">
+                                {isGenerating ? 'Generating...' : '✨ Generate with AI'}
+                            </button>
+                        </div>
                         <textarea id="item-description" value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary"></textarea>
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-4 pt-6 border-t border-base-300 mt-6">
-                    <button onClick={onClose} className="bg-secondary hover:bg-secondary-focus text-white font-bold py-2 px-6 rounded-lg transition-colors">
-                        Cancel
-                    </button>
-                    <button onClick={handleSave} className="bg-primary hover:bg-primary-focus text-white font-bold py-2 px-6 rounded-lg transition-colors">
-                        Save Changes
-                    </button>
+                <div className="flex justify-between items-center pt-6 border-t border-base-300 mt-6">
+                    <div>
+                        {!isNewItem && (
+                            <button onClick={handleDelete} className="bg-error hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                                Delete
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex gap-4">
+                        <button onClick={onClose} className="bg-secondary hover:bg-secondary-focus text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                            Cancel
+                        </button>
+                        <button onClick={handleSave} className="bg-primary hover:bg-primary-focus text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                            Save Changes
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -139,7 +190,7 @@ const MenuItemCard: React.FC<{
     </div>
 );
 
-const OrderSummary: React.FC<{ orderItems: OrderItem[]; onUpdateQuantity: (id: number, quantity: number) => void; onClear: () => void }> = ({ orderItems, onUpdateQuantity, onClear }) => {
+const OrderSummary: React.FC<{ orderItems: OrderItem[]; onUpdateQuantity: (id: number, quantity: number) => void; onRemoveItem: (id: number) => void; onClear: () => void }> = ({ orderItems, onUpdateQuantity, onRemoveItem, onClear }) => {
     const [editingItemId, setEditingItemId] = useState<number | null>(null);
     const subtotal = orderItems.reduce((acc, current) => acc + current.item.price * current.quantity, 0);
     const tax = subtotal * 0.08;
@@ -163,13 +214,13 @@ const OrderSummary: React.FC<{ orderItems: OrderItem[]; onUpdateQuantity: (id: n
                     <p className="text-gray-400 text-center mt-8">Click an item to add to the order.</p>
                 ) : (
                     orderItems.map(({ item, quantity }) => (
-                        <div key={item.id} className="flex justify-between items-center py-3 border-b border-base-300">
+                        <div key={item.id} className="flex justify-between items-center py-3 border-b border-base-300 group">
                             <div>
                                 <p className="font-semibold text-white">{item.name}</p>
                                 <p className="text-sm text-gray-400">${item.price.toFixed(2)}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button onClick={() => onUpdateQuantity(item.id, Math.max(1, quantity - 1))} className="w-7 h-7 bg-secondary rounded flex items-center justify-center">-</button>
+                                <button onClick={() => onUpdateQuantity(item.id, Math.max(1, quantity - 1))} className="w-6 h-6 bg-secondary rounded flex items-center justify-center text-lg">-</button>
                                 {editingItemId === item.id ? (
                                     <input
                                         type="number"
@@ -183,12 +234,15 @@ const OrderSummary: React.FC<{ orderItems: OrderItem[]; onUpdateQuantity: (id: n
                                 ) : (
                                     <span 
                                         onClick={() => setEditingItemId(item.id)} 
-                                        className="px-3 font-semibold cursor-pointer min-w-[3rem] text-center"
+                                        className="px-3 font-semibold cursor-pointer min-w-[2rem] text-center"
                                     >
                                         {quantity}
                                     </span>
                                 )}
-                                <button onClick={() => onUpdateQuantity(item.id, quantity + 1)} className="w-7 h-7 bg-secondary rounded flex items-center justify-center">+</button>
+                                <button onClick={() => onUpdateQuantity(item.id, quantity + 1)} className="w-6 h-6 bg-secondary rounded flex items-center justify-center text-lg">+</button>
+                                <button onClick={() => onRemoveItem(item.id)} className="ml-1 text-gray-500 hover:text-error transition-colors opacity-0 group-hover:opacity-100" aria-label="Remove item">
+                                    &times;
+                                </button>
                             </div>
                         </div>
                     ))
@@ -215,7 +269,9 @@ export const RestaurantPOS: React.FC = () => {
     const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [filter, setFilter] = useState<'All' | 'Appetizer' | 'Main Course' | 'Dessert' | 'Beverage'>('All');
-    const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [modalState, setModalState] = useState<{isOpen: boolean; item: MenuItem | null}>({isOpen: false, item: null});
+    const [toastMessage, setToastMessage] = useState('');
 
     const handleAddToOrder = (item: MenuItem) => {
         setOrderItems(prev => {
@@ -227,44 +283,80 @@ export const RestaurantPOS: React.FC = () => {
             }
             return [...prev, { item, quantity: 1 }];
         });
+        setToastMessage(`${item.name} added to order`);
     };
 
     const handleUpdateQuantity = (id: number, quantity: number) => {
         setOrderItems(prev => 
             prev.map(orderItem => orderItem.item.id === id ? { ...orderItem, quantity } : orderItem)
-            .filter(orderItem => orderItem.quantity > 0) // Remove if quantity is 0
+            .filter(orderItem => orderItem.quantity > 0)
         );
+    };
+
+    const handleRemoveItem = (id: number) => {
+        setOrderItems(prev => prev.filter(orderItem => orderItem.item.id !== id));
     };
 
     const handleClearOrder = () => {
       setOrderItems([]);
     }
     
-    const handleEditItem = (item: MenuItem) => {
-        setEditingItem(item);
+    const handleOpenModal = (item: MenuItem | null) => {
+        setModalState({ isOpen: true, item: item });
     };
 
     const handleCloseModal = () => {
-        setEditingItem(null);
+        setModalState({ isOpen: false, item: null });
     };
 
-    const handleSaveItem = (updatedItem: MenuItem) => {
-        setMenuItems(prevItems =>
-            prevItems.map(item => (item.id === updatedItem.id ? updatedItem : item))
-        );
-        setEditingItem(null);
+    const handleSaveItem = (savedItem: MenuItem) => {
+        setMenuItems(prevItems => {
+            const exists = prevItems.some(item => item.id === savedItem.id);
+            if (exists) {
+                // Update existing item
+                return prevItems.map(item => (item.id === savedItem.id ? savedItem : item));
+            }
+            // Add new item
+            return [...prevItems, savedItem];
+        });
+        handleCloseModal();
+    };
+    
+    const handleDeleteItem = (id: number) => {
+        setMenuItems(prev => prev.filter(item => item.id !== id));
+        handleCloseModal();
     };
 
-    const filteredItems = filter === 'All' ? menuItems : menuItems.filter(item => item.category === filter);
+    const filteredItems = menuItems
+        .filter(item => filter === 'All' || item.category === filter)
+        .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        
     const categories: ('All' | 'Appetizer' | 'Main Course' | 'Dessert' | 'Beverage')[] = ['All', 'Appetizer', 'Main Course', 'Dessert', 'Beverage'];
 
     return (
         <>
+            {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage('')} />}
             <div className="flex h-[calc(100vh-10rem)] gap-6">
                 <div className="w-2/3 flex flex-col">
-                    <div className="mb-4 flex space-x-2">
+                    <div className="mb-4 flex flex-wrap gap-2 items-center">
+                        <div className="relative flex-grow">
+                             <input 
+                                type="text"
+                                placeholder="Search menu items..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="w-full bg-base-100 p-2 rounded-lg border border-secondary pl-10"
+                            />
+                            <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                        <button onClick={() => handleOpenModal(null)} className="bg-primary hover:bg-primary-focus text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+                            New Item
+                        </button>
+                    </div>
+                     <div className="mb-4 flex space-x-2">
                         {categories.map(cat => (
-                            <button key={cat} onClick={() => setFilter(cat)} className={`px-4 py-2 rounded-lg font-semibold transition-colors ${filter === cat ? 'bg-primary text-white' : 'bg-base-100 hover:bg-base-300'}`}>
+                            <button key={cat} onClick={() => setFilter(cat)} className={`px-4 py-2 rounded-lg font-semibold transition-colors text-sm ${filter === cat ? 'bg-primary text-white' : 'bg-base-100 hover:bg-base-300'}`}>
                                 {cat}
                             </button>
                         ))}
@@ -275,20 +367,21 @@ export const RestaurantPOS: React.FC = () => {
                                 key={item.id} 
                                 item={item} 
                                 onAddToOrder={handleAddToOrder} 
-                                onEdit={handleEditItem}
+                                onEdit={() => handleOpenModal(item)}
                             />
                         ))}
                     </div>
                 </div>
                 <div className="w-1/3">
-                    <OrderSummary orderItems={orderItems} onUpdateQuantity={handleUpdateQuantity} onClear={handleClearOrder} />
+                    <OrderSummary orderItems={orderItems} onUpdateQuantity={handleUpdateQuantity} onRemoveItem={handleRemoveItem} onClear={handleClearOrder} />
                 </div>
             </div>
-            {editingItem && (
-                <EditMenuItemModal 
-                    item={editingItem}
+            {modalState.isOpen && (
+                <MenuItemModal
+                    item={modalState.item}
                     onClose={handleCloseModal}
                     onSave={handleSaveItem}
+                    onDelete={handleDeleteItem}
                 />
             )}
         </>
