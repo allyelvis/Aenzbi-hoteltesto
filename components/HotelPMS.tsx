@@ -66,15 +66,9 @@ const RoomDetailModal: React.FC<{
 
     useEffect(() => {
         if (room && room.status === RoomStatus.Available) {
-            const today = new Date();
-            const threeDaysFromNow = new Date(today);
-            threeDaysFromNow.setDate(today.getDate() + 3);
-
-            const checkInDate = today.toISOString().split('T')[0];
-            const checkOutDate = threeDaysFromNow.toISOString().split('T')[0];
-
-            setCheckIn(checkInDate);
-            setCheckOut(checkOutDate);
+            // Reset fields to allow manual entry instead of suggesting dates.
+            setCheckIn('');
+            setCheckOut('');
             setGuestName('');
             setError('');
         }
