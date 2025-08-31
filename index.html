@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aenzbi HotelResto</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'primary': '#0D9488', // Teal 600
+              'primary-focus': '#0F766E', // Teal 700
+              'primary-content': '#ffffff',
+              'secondary': '#475569', // Slate 600
+              'secondary-focus': '#334155', // Slate 700
+              'secondary-content': '#ffffff',
+              'accent': '#A21CAF', // Fuchsia 700
+              'accent-focus': '#86198F', // Fuchsia 800
+              'accent-content': '#ffffff',
+              'neutral': '#1E293B', // Slate 800
+              'neutral-focus': '#0F172A', // Slate 900
+              'neutral-content': '#ffffff',
+              'base-100': '#0F172A', // Slate 900 (Dark background)
+              'base-200': '#1E293B', // Slate 800
+              'base-300': '#334155', // Slate 700
+              'base-content': '#E2E8F0', // Slate 200 (Light text)
+              'info': '#2563EB',
+              'success': '#16A34A',
+              'warning': '#D97706',
+              'error': '#DC2626',
+            },
+          },
+        },
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "recharts": "https://aistudiocdn.com/recharts@^3.1.2",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.8.2",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.16.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-base-100 text-base-content">
+    <div id="root"></div>
+  </body>
+</html>
