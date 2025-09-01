@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { mockMenuItems, mockTables, mockOrders, mockTaxes } from '../services/mockData';
-import { MenuItem, OrderItem, Table, TableStatus, Order, Tax } from '../types';
+import { mockMenuItems, mockTables, mockOrders, mockTaxes, mockTransactions } from '../services/mockData';
+import { MenuItem, OrderItem, Table, TableStatus, Order, Tax, PaymentMethod, Transaction } from '../types';
 import { generateMenuItemDescription } from '../services/geminiService';
 
 // Toast Notification Component
@@ -248,6 +248,155 @@ const TaxManagementModal: React.FC<{
     );
 };
 
+// New Payment Modal
+const PaymentModal: React.FC<{
+    order: Order | null;
+    total: number;
+    onClose: () => void;
+    onPaymentSuccess: (transaction: Transaction) => void;
+}> = ({ order, total, onClose, onPaymentSuccess }) => {
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+    const [cashTendered, setCashTendered] = useState<number>(0);
+    const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
+    const [statusMessage, setStatusMessage] = useState('');
+
+    if (!order) return null;
+
+    const changeDue = cashTendered > total ? cashTendered - total : 0;
+
+    const handlePayment = () => {
+        if (!selectedMethod) return;
+
+        setPaymentStatus('processing');
+        setStatusMessage('Connecting to payment gateway...');
+
+        // Simulate gateway processing
+        setTimeout(() => {
+            const isSuccess = Math.random() > 0.15; // 85% success rate
+
+            if (isSuccess) {
+                setStatusMessage('Payment Approved!');
+                setPaymentStatus('success');
+                const newTransaction: Transaction = {
+                    id: `TRX-${Date.now()}`,
+                    orderId: order.id,
+                    amount: total,
+                    method: selectedMethod,
+                    status: 'Completed',
+                    date: new Date().toISOString(),
+                    gatewayResponse: 'Approved',
+                };
+                setTimeout(() => onPaymentSuccess(newTransaction), 1000);
+            } else {
+                setStatusMessage('Payment Declined. Please try again.');
+                setPaymentStatus('failed');
+            }
+        }, 2000);
+    };
+
+    const renderPaymentDetails = () => {
+        if (!selectedMethod) {
+            return <p className="text-center text-gray-400">Please select a payment method.</p>;
+        }
+
+        switch(selectedMethod) {
+            case PaymentMethod.Cash:
+                return (
+                    <div className="space-y-4">
+                        <div>
+                            <label htmlFor="cash-tendered" className="text-sm text-gray-400 block mb-1">Amount Tendered</label>
+                            <input id="cash-tendered" type="number" value={cashTendered || ''} onChange={e => setCashTendered(parseFloat(e.target.value) || 0)} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary text-lg" />
+                        </div>
+                        <div className="text-lg flex justify-between">
+                            <span className="text-gray-400">Change Due:</span>
+                            <span className="font-bold text-white">${changeDue.toFixed(2)}</span>
+                        </div>
+                        <button onClick={handlePayment} disabled={cashTendered < total} className="w-full bg-success hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors disabled:bg-gray-600">
+                            Confirm Cash Payment
+                        </button>
+                    </div>
+                );
+            case PaymentMethod.CreditCard:
+            case PaymentMethod.MobilePayment:
+                 return (
+                    <div className="text-center">
+                        <p className="mb-4">Click below to process the payment via the simulated terminal.</p>
+                        <button onClick={handlePayment} className="w-full bg-primary hover:bg-primary-focus text-white font-bold py-3 rounded-lg transition-colors">
+                            Process ${total.toFixed(2)}
+                        </button>
+                    </div>
+                );
+        }
+    };
+    
+    const renderOverlay = () => {
+        let icon, messageColor;
+        switch (paymentStatus) {
+            case 'processing':
+                icon = <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>;
+                messageColor = 'text-white';
+                break;
+            case 'success':
+                icon = <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+                messageColor = 'text-success';
+                break;
+            case 'failed':
+                 icon = <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+                messageColor = 'text-error';
+                break;
+            default:
+                return null;
+        }
+
+        return (
+             <div className="absolute inset-0 bg-base-200 bg-opacity-95 flex flex-col items-center justify-center space-y-4 z-10">
+                {icon}
+                <p className={`text-xl font-semibold ${messageColor}`}>{statusMessage}</p>
+                {paymentStatus === 'failed' && (
+                    <button onClick={() => setPaymentStatus('idle')} className="bg-secondary hover:bg-secondary-focus text-white font-bold py-2 px-6 rounded-lg">
+                        Try Again
+                    </button>
+                )}
+            </div>
+        );
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" role="dialog" aria-modal="true">
+            <div className="bg-base-200 rounded-lg shadow-xl p-8 w-full max-w-lg relative overflow-hidden">
+                {renderOverlay()}
+                <div className="flex justify-between items-center mb-2">
+                    <h2 className="text-2xl font-bold text-white">Payment</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl leading-none" aria-label="Close modal">&times;</button>
+                </div>
+                <div className="text-center mb-6 border-b border-base-300 pb-4">
+                    <p className="text-gray-400">Total Amount Due</p>
+                    <p className="text-5xl font-bold text-primary">${total.toFixed(2)}</p>
+                </div>
+                
+                <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-white mb-3 text-center">Select Payment Method</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                        {Object.values(PaymentMethod).map(method => (
+                             <button 
+                                key={method} 
+                                onClick={() => setSelectedMethod(method)} 
+                                className={`p-4 rounded-lg text-center font-semibold transition-all duration-200 border-2 ${selectedMethod === method ? 'bg-primary border-primary text-white scale-105' : 'bg-base-300 border-secondary hover:border-primary text-gray-300'}`}
+                             >
+                                {method}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="bg-base-100 p-6 rounded-lg min-h-[160px] flex items-center justify-center">
+                    {renderPaymentDetails()}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const MenuItemCard: React.FC<{ 
     item: MenuItem; 
@@ -287,9 +436,9 @@ const OrderSummary: React.FC<{
     activeTaxes: Tax[];
     onUpdateQuantity: (itemId: number, quantity: number) => void; 
     onRemoveItem: (itemId: number) => void; 
-    onFinalizePayment: () => void;
+    onProceedToPayment: () => void;
     onOpenTaxModal: () => void;
-}> = ({ selectedTable, order, activeTaxes, onUpdateQuantity, onRemoveItem, onFinalizePayment, onOpenTaxModal }) => {
+}> = ({ selectedTable, order, activeTaxes, onUpdateQuantity, onRemoveItem, onProceedToPayment, onOpenTaxModal }) => {
     const subtotal = order?.items.reduce((acc, current) => acc + current.item.price * current.quantity, 0) || 0;
     
     const appliedTaxes = activeTaxes.map(tax => {
@@ -347,8 +496,8 @@ const OrderSummary: React.FC<{
                     ))}
                     
                     <div className="flex justify-between text-white font-bold text-xl pt-2 mt-2 border-t border-white/10"><span>Total</span><span>${total.toFixed(2)}</span></div>
-                    <button onClick={onFinalizePayment} className="w-full bg-primary hover:bg-primary-focus text-white font-bold py-3 rounded-lg mt-4 transition-colors">
-                        Finalize Payment
+                    <button onClick={onProceedToPayment} className="w-full bg-primary hover:bg-primary-focus text-white font-bold py-3 rounded-lg mt-4 transition-colors">
+                        Proceed to Payment
                     </button>
                 </div>
             )}
@@ -441,14 +590,16 @@ export const RestaurantPOS: React.FC = () => {
     const [tables, setTables] = useState<Table[]>(mockTables);
     const [orders, setOrders] = useState<Order[]>(mockOrders);
     const [taxes, setTaxes] = useState<Tax[]>(mockTaxes);
+    const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
     const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
     const [activeView, setActiveView] = useState<'floorplan' | 'menu'>('floorplan');
     const [menuModalState, setMenuModalState] = useState<{isOpen: boolean; item: MenuItem | null}>({isOpen: false, item: null});
     const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
 
     const selectedTable = tables.find(t => t.id === selectedTableId) || null;
-    const currentOrder = orders.find(o => o.tableId === selectedTableId && o.status === 'Open') || null;
+    const currentOrder = orders.find(o => o.tableId === selectedTableId && (o.status === 'Open' || o.status === 'Processing Payment')) || null;
 
     const handleSelectTable = (tableId: number) => {
         setSelectedTableId(tableId);
@@ -490,11 +641,19 @@ export const RestaurantPOS: React.FC = () => {
         handleUpdateQuantity(itemId, 0);
     };
 
-    const handleFinalizePayment = () => {
+    const handleProceedToPayment = () => {
         if (!selectedTableId || !currentOrder) return;
-        setOrders(prev => prev.map(o => o.id === currentOrder.id ? { ...o, status: 'Paid' } : o));
+        setOrders(prev => prev.map(o => o.id === currentOrder.id ? { ...o, status: 'Processing Payment' } : o));
+        setIsPaymentModalOpen(true);
+    };
+
+    const handlePaymentSuccess = (transaction: Transaction) => {
+        setTransactions(prev => [...prev, transaction]);
+        setOrders(prev => prev.map(o => o.id === transaction.orderId ? { ...o, status: 'Paid' } : o));
         setTables(prev => prev.map(t => t.id === selectedTableId ? { ...t, status: TableStatus.Available } : t));
+        
         setToastMessage(`Payment for Table ${selectedTable?.name} finalized.`);
+        setIsPaymentModalOpen(false);
         setSelectedTableId(null);
         setActiveView('floorplan');
     };
@@ -521,6 +680,15 @@ export const RestaurantPOS: React.FC = () => {
         setToastMessage("Tax settings updated.");
     };
 
+    const subtotal = currentOrder?.items.reduce((acc, current) => acc + current.item.price * current.quantity, 0) || 0;
+    const activeTaxes = taxes.filter(t => t.enabled);
+    const appliedTaxes = activeTaxes.map(tax => {
+        const amount = tax.type === 'percentage' ? subtotal * (tax.value / 100) : tax.value;
+        return { ...tax, amount };
+    });
+    const totalTax = appliedTaxes.reduce((acc, tax) => acc + tax.amount, 0);
+    const total = subtotal + totalTax;
+
     return (
         <>
             {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage('')} />}
@@ -542,10 +710,10 @@ export const RestaurantPOS: React.FC = () => {
                     <OrderSummary 
                         selectedTable={selectedTable} 
                         order={currentOrder}
-                        activeTaxes={taxes.filter(t => t.enabled)}
+                        activeTaxes={activeTaxes}
                         onUpdateQuantity={handleUpdateQuantity} 
                         onRemoveItem={handleRemoveItem} 
-                        onFinalizePayment={handleFinalizePayment}
+                        onProceedToPayment={handleProceedToPayment}
                         onOpenTaxModal={() => setIsTaxModalOpen(true)}
                     />
                 </div>
@@ -563,6 +731,14 @@ export const RestaurantPOS: React.FC = () => {
                     initialTaxes={taxes}
                     onClose={() => setIsTaxModalOpen(false)}
                     onSave={handleSaveTaxes}
+                />
+            )}
+            {isPaymentModalOpen && (
+                <PaymentModal 
+                    order={currentOrder}
+                    total={total}
+                    onClose={() => setIsPaymentModalOpen(false)}
+                    onPaymentSuccess={handlePaymentSuccess}
                 />
             )}
         </>

@@ -1,4 +1,4 @@
-import { Room, RoomStatus, MenuItem, Sale, Supplier, InventoryItem, PurchaseOrder, PurchaseOrderStatus, Table, TableStatus, Order, Tax } from '../types';
+import { Room, RoomStatus, MenuItem, Sale, Supplier, InventoryItem, PurchaseOrder, PurchaseOrderStatus, Table, TableStatus, Order, Tax, Transaction } from '../types';
 
 const today = new Date();
 const tomorrow = new Date(today);
@@ -118,3 +118,6 @@ export const mockTaxes: Tax[] = [
   { id: 2, name: 'Service Charge', type: 'percentage', value: 10, enabled: false },
   { id: 3, name: 'Tourism Fee', type: 'fixed', value: 1.50, enabled: false },
 ];
+
+// New Mock Data for Transactions (initially empty)
+export const mockTransactions: Transaction[] = [];

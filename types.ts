@@ -65,7 +65,7 @@ export interface Order {
     id: string; // e.g., ORD-001
     tableId: number;
     items: OrderItem[];
-    status: 'Open' | 'Paid' | 'Cancelled';
+    status: 'Open' | 'Processing Payment' | 'Paid' | 'Cancelled';
 }
 
 
@@ -117,4 +117,21 @@ export interface Tax {
   type: 'percentage' | 'fixed';
   value: number; // The percentage rate (e.g., 8 for 8%) or the fixed amount
   enabled: boolean;
+}
+
+// New Interfaces for Payment Processing
+export enum PaymentMethod {
+    Cash = 'Cash',
+    CreditCard = 'Credit Card',
+    MobilePayment = 'Mobile Payment',
+}
+
+export interface Transaction {
+    id: string;
+    orderId: string;
+    amount: number;
+    method: PaymentMethod;
+    status: 'Completed' | 'Failed';
+    date: string; // ISO format
+    gatewayResponse?: string;
 }
