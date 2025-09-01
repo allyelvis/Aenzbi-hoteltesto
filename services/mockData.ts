@@ -1,24 +1,42 @@
-import { Room, RoomStatus, MenuItem, Sale, Supplier, InventoryItem, PurchaseOrder, PurchaseOrderStatus, Table, TableStatus, Order, Tax, Transaction } from '../types';
 
+import { Room, RoomStatus, MenuItem, Sale, Supplier, InventoryItem, PurchaseOrder, PurchaseOrderStatus, Table, TableStatus, Order, Tax, Transaction, Guest, Booking, BookingStatus, PaymentStatus, HousekeepingStatus } from '../types';
+
+// --- SHARED HELPERS ---
 const today = new Date();
-const tomorrow = new Date(today);
-tomorrow.setDate(tomorrow.getDate() + 1);
-const yesterday = new Date(today);
-yesterday.setDate(yesterday.getDate() - 1);
-const threeDaysFromNow = new Date(today);
-threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+const getDate = (offset: number) => {
+    const date = new Date();
+    date.setDate(today.getDate() + offset);
+    return date.toISOString().split('T')[0];
+};
 
+
+// --- HOTEL PMS MOCK DATA ---
 export const mockRooms: Room[] = [
-    { id: 1, number: '101', type: 'Standard Queen', status: RoomStatus.Available },
-    { id: 2, number: '102', type: 'Standard Queen', status: RoomStatus.Occupied, guest: 'John Doe', checkIn: yesterday.toISOString().split('T')[0], checkOut: tomorrow.toISOString().split('T')[0] },
-    { id: 3, number: '103', type: 'Deluxe King', status: RoomStatus.Dirty },
-    { id: 4, number: '201', type: 'Suite', status: RoomStatus.Available },
-    { id: 5, number: '202', type: 'Standard Queen', status: RoomStatus.Maintenance },
-    { id: 6, number: '203', type: 'Deluxe King', status: RoomStatus.Occupied, guest: 'Jane Smith', checkIn: today.toISOString().split('T')[0], checkOut: threeDaysFromNow.toISOString().split('T')[0] },
-    { id: 7, number: '301', type: 'Suite', status: RoomStatus.Available },
-    { id: 8, number: '302', type: 'Deluxe King', status: RoomStatus.Dirty },
+    { id: 1, number: '101', type: 'Standard Queen', housekeepingStatus: HousekeepingStatus.Clean, status: RoomStatus.Available, rate: 150 },
+    { id: 2, number: '102', type: 'Standard Queen', housekeepingStatus: HousekeepingStatus.Clean, status: RoomStatus.Occupied, rate: 150 },
+    { id: 3, number: '103', type: 'Deluxe King', housekeepingStatus: HousekeepingStatus.Dirty, status: RoomStatus.Dirty, rate: 220 },
+    { id: 4, number: '201', type: 'Suite', housekeepingStatus: HousekeepingStatus.Clean, status: RoomStatus.Available, rate: 350 },
+    { id: 5, number: '202', type: 'Standard Queen', housekeepingStatus: HousekeepingStatus.Clean, status: RoomStatus.Maintenance, rate: 150 },
+    { id: 6, number: '203', type: 'Deluxe King', housekeepingStatus: HousekeepingStatus.Clean, status: RoomStatus.Occupied, rate: 220 },
+    { id: 7, number: '301', type: 'Suite', housekeepingStatus: HousekeepingStatus.InProgress, status: RoomStatus.Dirty, rate: 350 },
+    { id: 8, number: '302', type: 'Deluxe King', housekeepingStatus: HousekeepingStatus.Dirty, status: RoomStatus.Dirty, rate: 220 },
 ];
 
+export const mockGuests: Guest[] = [
+    { id: 1, firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', phone: '555-1234', address: '123 Main St, Anytown, USA' },
+    { id: 2, firstName: 'Jane', lastName: 'Smith', email: 'jane.smith@example.com', phone: '555-5678', address: '456 Oak Ave, Anytown, USA' },
+    { id: 3, firstName: 'Peter', lastName: 'Jones', email: 'peter.jones@example.com', phone: '555-8765', address: '789 Pine Ln, Anytown, USA' },
+];
+
+export const mockBookings: Booking[] = [
+    { id: 'BOOK-001', guestId: 1, roomId: 2, checkIn: getDate(-2), checkOut: getDate(2), status: BookingStatus.CheckedIn, totalAmount: 600, paymentStatus: PaymentStatus.Paid },
+    { id: 'BOOK-002', guestId: 2, roomId: 6, checkIn: getDate(0), checkOut: getDate(3), status: BookingStatus.CheckedIn, totalAmount: 660, paymentStatus: PaymentStatus.Unpaid },
+    { id: 'BOOK-003', guestId: 3, roomId: 4, checkIn: getDate(5), checkOut: getDate(8), status: BookingStatus.Confirmed, totalAmount: 1050, paymentStatus: PaymentStatus.Unpaid },
+    { id: 'BOOK-004', guestId: 1, roomId: 1, checkIn: getDate(-10), checkOut: getDate(-7), status: BookingStatus.CheckedOut, totalAmount: 450, paymentStatus: PaymentStatus.Paid },
+];
+
+
+// --- RESTAURANT POS MOCK DATA ---
 export const mockMenuItems: MenuItem[] = [
     { id: 1, name: 'Truffle Fries', category: 'Appetizer', price: 12.50, image: 'https://picsum.photos/id/10/300/200', description: 'Crispy fries tossed in truffle oil and parmesan.' },
     { id: 2, name: 'Bruschetta', category: 'Appetizer', price: 10.00, image: 'https://picsum.photos/id/20/300/200', description: 'Toasted bread with tomatoes, garlic, and basil.' },
@@ -37,7 +55,6 @@ export const mockSales: Sale[] = [
     { id: 'S004', date: '2023-10-29T20:15:00Z', items: [{ name: 'Ribeye Steak', category: 'Main Course', quantity: 1, price: 35.00 }], total: 35.00 },
 ];
 
-// New Mock Data for Table Management
 export const mockTables: Table[] = [
     { id: 1, name: 'T1', capacity: 2, status: TableStatus.Occupied, x: 10, y: 15, shape: 'circle' },
     { id: 2, name: 'T2', capacity: 2, status: TableStatus.Available, x: 30, y: 15, shape: 'circle' },
@@ -71,9 +88,15 @@ export const mockOrders: Order[] = [
     }
 ];
 
+export const mockTaxes: Tax[] = [
+  { id: 1, name: 'Sales Tax', type: 'percentage', value: 8, enabled: true },
+  { id: 2, name: 'Service Charge', type: 'percentage', value: 10, enabled: false },
+  { id: 3, name: 'Tourism Fee', type: 'fixed', value: 1.50, enabled: false },
+];
 
-// New Mock Data for Inventory Management
+export const mockTransactions: Transaction[] = [];
 
+// --- INVENTORY MOCK DATA ---
 export const mockSuppliers: Supplier[] = [
     { id: 1, name: 'Fresh Produce Co.', contactPerson: 'Mark Green', email: 'mark@freshproduce.com', phone: '555-0101' },
     { id: 2, name: 'Prime Meats Ltd.', contactPerson: 'Susan Beef', email: 'susan@primemeats.com', phone: '555-0102' },
@@ -111,13 +134,3 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
         totalCost: 300
     },
 ];
-
-// New Mock Data for Tax Management
-export const mockTaxes: Tax[] = [
-  { id: 1, name: 'Sales Tax', type: 'percentage', value: 8, enabled: true },
-  { id: 2, name: 'Service Charge', type: 'percentage', value: 10, enabled: false },
-  { id: 3, name: 'Tourism Fee', type: 'fixed', value: 1.50, enabled: false },
-];
-
-// New Mock Data for Transactions (initially empty)
-export const mockTransactions: Transaction[] = [];

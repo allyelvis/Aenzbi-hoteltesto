@@ -1,3 +1,4 @@
+
 export enum Page {
     Dashboard = 'dashboard',
     POS = 'pos',
@@ -6,6 +7,7 @@ export enum Page {
     AITools = 'ai-tools'
 }
 
+// --- HOTEL PMS TYPES ---
 export enum RoomStatus {
     Available = 'Available',
     Occupied = 'Occupied',
@@ -13,16 +15,57 @@ export enum RoomStatus {
     Maintenance = 'Maintenance',
 }
 
+export enum HousekeepingStatus {
+    Clean = 'Clean',
+    Dirty = 'Dirty',
+    InProgress = 'In Progress',
+    Inspect = 'Inspect',
+}
+
 export interface Room {
     id: number;
     number: string;
-    type: string;
-    status: RoomStatus;
-    guest?: string;
-    checkIn?: string;
-    checkOut?: string;
+    type: string; // e.g., 'Standard Queen', 'Deluxe King', 'Suite'
+    status: RoomStatus; // Overall status (dynamic)
+    housekeepingStatus: HousekeepingStatus;
+    rate: number; // Price per night
 }
 
+export interface Guest {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    address: string;
+}
+
+export enum BookingStatus {
+    Confirmed = 'Confirmed',
+    CheckedIn = 'Checked-In',
+    CheckedOut = 'Checked-Out',
+    Cancelled = 'Cancelled',
+}
+
+export enum PaymentStatus {
+    Paid = 'Paid',
+    Unpaid = 'Unpaid',
+    Partial = 'Partial',
+}
+
+export interface Booking {
+    id: string; // e.g., BOOK-12345
+    guestId: number;
+    roomId: number;
+    checkIn: string; // ISO Date string
+    checkOut: string; // ISO Date string
+    status: BookingStatus;
+    totalAmount: number;
+    paymentStatus: PaymentStatus;
+    notes?: string;
+}
+
+// --- RESTAURANT POS TYPES ---
 export interface MenuItem {
     id: number;
     name: string;
@@ -44,7 +87,6 @@ export interface Sale {
     total: number;
 }
 
-// New Interfaces for Restaurant Table Management
 export enum TableStatus {
     Available = 'Available',
     Occupied = 'Occupied',
@@ -68,8 +110,31 @@ export interface Order {
     status: 'Open' | 'Processing Payment' | 'Paid' | 'Cancelled';
 }
 
+export interface Tax {
+  id: number;
+  name: string;
+  type: 'percentage' | 'fixed';
+  value: number; // The percentage rate (e.g., 8 for 8%) or the fixed amount
+  enabled: boolean;
+}
 
-// New Interfaces for Inventory Management
+export enum PaymentMethod {
+    Cash = 'Cash',
+    CreditCard = 'Credit Card',
+    MobilePayment = 'Mobile Payment',
+}
+
+export interface Transaction {
+    id: string;
+    orderId: string;
+    amount: number;
+    method: PaymentMethod;
+    status: 'Completed' | 'Failed';
+    date: string; // ISO format
+    gatewayResponse?: string;
+}
+
+// --- INVENTORY TYPES ---
 export interface Supplier {
     id: number;
     name: string;
@@ -108,30 +173,4 @@ export interface PurchaseOrder {
     items: PurchaseOrderItem[];
     status: PurchaseOrderStatus;
     totalCost: number;
-}
-
-// New Interface for Tax Management
-export interface Tax {
-  id: number;
-  name: string;
-  type: 'percentage' | 'fixed';
-  value: number; // The percentage rate (e.g., 8 for 8%) or the fixed amount
-  enabled: boolean;
-}
-
-// New Interfaces for Payment Processing
-export enum PaymentMethod {
-    Cash = 'Cash',
-    CreditCard = 'Credit Card',
-    MobilePayment = 'Mobile Payment',
-}
-
-export interface Transaction {
-    id: string;
-    orderId: string;
-    amount: number;
-    method: PaymentMethod;
-    status: 'Completed' | 'Failed';
-    date: string; // ISO format
-    gatewayResponse?: string;
 }

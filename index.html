@@ -6,11 +6,17 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aenzbi HotelResto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
             colors: {
               'primary': '#0D9488', // Teal 600
               'primary-focus': '#0F766E', // Teal 700
@@ -37,6 +43,30 @@
         },
       }
     </script>
+    <style>
+      /* Custom scrollbar for a better dark mode experience */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1E293B; /* base-200 */
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #475569; /* secondary */
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #334155; /* secondary-focus */
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      /* Fix for date picker icon color in dark mode */
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(0.8);
+      }
+    </style>
   <script type="importmap">
 {
   "imports": {

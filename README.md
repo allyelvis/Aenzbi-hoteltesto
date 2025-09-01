@@ -1,3 +1,4 @@
+
 # Aenzbi HotelResto - AI-Powered Hospitality Management
 
 Aenzbi HotelResto is a modern, proof-of-concept application demonstrating a comprehensive hotel property management system (PMS) and restaurant point-of-sale (POS) system. It is enhanced with powerful AI features, leveraging the Google Gemini API for intelligent data analysis and content generation.
@@ -5,8 +6,21 @@ Aenzbi HotelResto is a modern, proof-of-concept application demonstrating a comp
 ## ✨ Features
 
 -   **Dashboard Overview**: At-a-glance view of key metrics like total revenue, hotel occupancy rates, restaurant orders, and room availability, complete with interactive charts.
--   **Restaurant POS**: An intuitive interface for taking customer orders. Browse menu items by category, add them to a dynamic order summary, adjust quantities, and see a real-time calculation of the subtotal, tax, and total.
--   **Hotel PMS**: A visual grid of all hotel rooms, color-coded by status (Available, Occupied, Dirty, Maintenance). Users can click on a room to manage its state, including checking guests in/out, booking available rooms, and updating cleaning status.
+-   **Advanced Restaurant POS**: An intuitive, feature-rich interface for managing restaurant operations.
+    -   Interactive floor plan for table selection and status management.
+    -   Full menu browsing with search and category filters.
+    -   CRUD operations for menu items, including AI-powered description generation.
+    -   Dynamic order summary with real-time calculations.
+    -   Configurable tax management system (percentage and fixed-rate).
+    -   Integrated payment processing modal with simulated gateway transactions for cash, card, and mobile payments.
+-   **Comprehensive Hotel PMS**: A multi-faceted system for complete hotel management.
+    -   **Visual Room Grid**: An overview of all rooms, color-coded by real-time status (Available, Occupied, Dirty, Maintenance).
+    -   **Advanced Booking Management**: A powerful modal for creating new bookings, checking guests in/out, processing payments, and viewing reservation details.
+    -   **Housekeeping Module**: A dedicated, table-based view for housekeeping staff to efficiently track and update room cleaning statuses (Clean, Dirty, In Progress).
+    -   **Guest CRM**: A central location to manage guest information and view their complete booking history.
+    -   **Reporting & Analytics**: Visual charts for key hotel metrics, including a 7-day occupancy forecast and revenue breakdown by room type.
+    -   **Invoice & Fiscalization**: Generate detailed invoices for any booking and simulate printing to a fiscal printer.
+-   **Inventory Management**: A complete solution for tracking stock, suppliers, and purchase orders.
 -   **AI-Powered Tools**:
     -   **Menu Description Generator**: Select a menu item and let Gemini generate a short, creative, and enticing description for it.
     -   **AI Sales Analyst**: Ask natural language questions about your sales data (e.g., "What was our best-selling item?") and receive instant, insightful analysis from Gemini.
@@ -53,6 +67,7 @@ Aenzbi HotelResto is a modern, proof-of-concept application demonstrating a comp
 │   ├── Dashboard.tsx       # Main dashboard component with charts and stats
 │   ├── Header.tsx          # Top header bar component
 │   ├── HotelPMS.tsx        # Hotel room management grid component
+│   ├── Inventory.tsx       # Inventory management component
 │   ├── RestaurantPOS.tsx   # Restaurant point-of-sale interface
 │   └── Sidebar.tsx         # Main navigation sidebar
 └── services/

@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { mockRooms, mockSales } from '../services/mockData';
-import { RoomStatus } from '../types';
+import { mockRooms, mockSales, mockBookings } from '../services/mockData';
+import { RoomStatus, BookingStatus } from '../types';
 
 const Card: React.FC<{ title: string; value: string; description: string }> = ({ title, value, description }) => (
     <div className="bg-base-100 p-6 rounded-lg shadow-lg">
@@ -17,24 +17,38 @@ const salesDataForChart = mockSales.map(sale => ({
     Revenue: sale.total
 }));
 
-const roomStatusData = [
-    { name: 'Available', count: mockRooms.filter(r => r.status === RoomStatus.Available).length },
-    { name: 'Occupied', count: mockRooms.filter(r => r.status === RoomStatus.Occupied).length },
-    { name: 'Dirty', count: mockRooms.filter(r => r.status === RoomStatus.Dirty).length },
-    { name: 'Maintenance', count: mockRooms.filter(r => r.status === RoomStatus.Maintenance).length }
-];
+const getRoomStatusCounts = () => {
+    const counts = {
+        [RoomStatus.Available]: 0,
+        [RoomStatus.Occupied]: 0,
+        [RoomStatus.Dirty]: 0,
+        [RoomStatus.Maintenance]: 0,
+    };
+    mockRooms.forEach(room => {
+        counts[room.status]++;
+    });
+    return [
+        { name: 'Available', count: counts[RoomStatus.Available] },
+        { name: 'Occupied', count: counts[RoomStatus.Occupied] },
+        { name: 'Dirty', count: counts[RoomStatus.Dirty] },
+        { name: 'Maintenance', count: counts[RoomStatus.Maintenance] }
+    ];
+};
 
 export const Dashboard: React.FC = () => {
     const totalRevenue = mockSales.reduce((acc, sale) => acc + sale.total, 0);
-    const occupancyRate = (mockRooms.filter(r => r.status === RoomStatus.Occupied).length / mockRooms.length) * 100;
+    const occupiedRooms = mockBookings.filter(b => b.status === BookingStatus.CheckedIn).length;
+    const occupancyRate = (occupiedRooms / mockRooms.length) * 100;
+    const roomStatusData = getRoomStatusCounts();
+    const availableRooms = roomStatusData.find(d => d.name === 'Available')?.count || 0;
 
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card title="Total Revenue" value={`$${totalRevenue.toFixed(2)}`} description="All time sales" />
+                <Card title="Total Revenue" value={`$${totalRevenue.toFixed(2)}`} description="All time restaurant sales" />
                 <Card title="Occupancy Rate" value={`${occupancyRate.toFixed(1)}%`} description="Currently occupied rooms" />
                 <Card title="Total Orders" value={mockSales.length.toString()} description="Restaurant orders processed" />
-                <Card title="Rooms Available" value={roomStatusData[0].count.toString()} description="Ready for check-in" />
+                <Card title="Rooms Available" value={availableRooms.toString()} description="Ready for check-in" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
