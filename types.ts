@@ -83,7 +83,7 @@ export interface InventoryItem {
     name: string;
     category: string;
     quantityInStock: number;
-    unit: 'kg' | 'liters' | 'units';
+    unit: string;
     reorderLevel: number;
     supplierId: number; // Link to a supplier
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { mockInventoryItems, mockSuppliers, mockPurchaseOrders } from '../services/mockData';
 import { InventoryItem, Supplier, PurchaseOrder, PurchaseOrderStatus } from '../types';
@@ -22,6 +21,103 @@ const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ chi
         {children}
     </div>
 );
+
+// Inventory Item Modal
+const InventoryItemModal: React.FC<{
+    item: InventoryItem | null;
+    suppliers: Supplier[];
+    onClose: () => void;
+    onSave: (item: InventoryItem) => void;
+    onDelete: (id: number) => void;
+}> = ({ item, suppliers, onClose, onSave, onDelete }) => {
+    const isNewItem = item === null;
+    const [formData, setFormData] = useState({
+        name: item?.name || '',
+        category: item?.category || '',
+        supplierId: item?.supplierId || (suppliers.length > 0 ? suppliers[0].id : 0),
+        quantityInStock: item?.quantityInStock || 0,
+        unit: item?.unit || '',
+        reorderLevel: item?.reorderLevel || 0,
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value, type } = e.target;
+        const isNumber = type === 'number';
+        setFormData(prev => ({ ...prev, [name]: isNumber ? parseFloat(value) : value }));
+    };
+
+    const handleSave = () => {
+        const savedItem: InventoryItem = {
+            id: item?.id || Date.now(),
+            ...formData,
+        };
+        onSave(savedItem);
+    };
+    
+    const handleDelete = () => {
+        if(item) onDelete(item.id);
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="item-modal-title">
+            <div className="bg-base-200 rounded-lg shadow-xl p-8 w-full max-w-lg">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-white" id="item-modal-title">{isNewItem ? 'Add New Inventory Item' : `Edit: ${item?.name}`}</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl leading-none" aria-label="Close modal">&times;</button>
+                </div>
+                
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                            <label htmlFor="item-name" className="text-sm text-gray-400 block mb-1">Item Name</label>
+                            <input id="item-name" name="name" type="text" value={formData.name} onChange={handleChange} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary" />
+                        </div>
+                        <div>
+                             <label htmlFor="item-category" className="text-sm text-gray-400 block mb-1">Category</label>
+                             <input id="item-category" name="category" type="text" value={formData.category} onChange={handleChange} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary" />
+                        </div>
+                        <div>
+                            <label htmlFor="item-supplier" className="text-sm text-gray-400 block mb-1">Supplier</label>
+                             <select id="item-supplier" name="supplierId" value={formData.supplierId} onChange={handleChange} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary">
+                                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
+                        </div>
+                         <div>
+                             <label htmlFor="item-quantity" className="text-sm text-gray-400 block mb-1">Quantity In Stock</label>
+                             <input id="item-quantity" name="quantityInStock" type="number" step="0.01" value={formData.quantityInStock} onChange={handleChange} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary" />
+                        </div>
+                        <div>
+                             <label htmlFor="item-unit" className="text-sm text-gray-400 block mb-1">Unit (e.g., kg, pcs, bottles)</label>
+                             <input id="item-unit" name="unit" type="text" value={formData.unit} onChange={handleChange} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary" />
+                        </div>
+                         <div className="md:col-span-2">
+                             <label htmlFor="item-reorder" className="text-sm text-gray-400 block mb-1">Reorder Level</label>
+                             <input id="item-reorder" name="reorderLevel" type="number" step="0.01" value={formData.reorderLevel} onChange={handleChange} className="w-full bg-base-300 text-white p-2 rounded-lg border border-secondary" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-6 border-t border-base-300 mt-6">
+                    <div>
+                        {!isNewItem && (
+                            <button onClick={handleDelete} className="bg-error hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                                Delete
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex gap-4">
+                        <button onClick={onClose} className="bg-secondary hover:bg-secondary-focus text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                            Cancel
+                        </button>
+                        <button onClick={handleSave} className="bg-primary hover:bg-primary-focus text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // Supplier Detail Modal Component
 const SupplierDetailModal: React.FC<{
@@ -114,14 +210,19 @@ const SupplierDetailModal: React.FC<{
 
 
 // Main Content Components for each tab
-const InventoryList: React.FC<{ items: InventoryItem[], suppliers: Supplier[] }> = ({ items, suppliers }) => {
+const InventoryList: React.FC<{ 
+    items: InventoryItem[], 
+    suppliers: Supplier[], 
+    onSelectItem: (item: InventoryItem) => void;
+    onAddItem: () => void;
+}> = ({ items, suppliers, onSelectItem, onAddItem }) => {
     const getSupplierName = (id: number) => suppliers.find(s => s.id === id)?.name || 'Unknown';
     
     return (
         <Card>
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-white">Inventory Items</h2>
-                <button className="bg-primary hover:bg-primary-focus text-white font-bold py-2 px-4 rounded-lg">Add New Item</button>
+                <button onClick={onAddItem} className="bg-primary hover:bg-primary-focus text-white font-bold py-2 px-4 rounded-lg">Add New Item</button>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -136,7 +237,7 @@ const InventoryList: React.FC<{ items: InventoryItem[], suppliers: Supplier[] }>
                     </thead>
                     <tbody>
                         {items.map(item => (
-                            <tr key={item.id} className="border-b border-base-300 hover:bg-base-200">
+                            <tr key={item.id} onClick={() => onSelectItem(item)} className="border-b border-base-300 hover:bg-base-200 cursor-pointer">
                                 <td className="px-4 py-3 font-medium text-white">{item.name}</td>
                                 <td className="px-4 py-3 text-gray-300">{item.category}</td>
                                 <td className={`px-4 py-3 font-semibold ${item.quantityInStock <= item.reorderLevel ? 'text-error' : 'text-gray-300'}`}>
@@ -234,28 +335,57 @@ const PurchaseOrderList: React.FC<{ orders: PurchaseOrder[], suppliers: Supplier
 
 export const Inventory: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('inventory');
-    const [inventoryItems] = useState<InventoryItem[]>(mockInventoryItems);
+    const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(mockInventoryItems);
     const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
     const [purchaseOrders] = useState<PurchaseOrder[]>(mockPurchaseOrders);
+    
+    // Supplier Modal State
     const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
 
-    const handleSupplierSelect = (supplier: Supplier) => {
-        setSelectedSupplier(supplier);
-    };
+    // Inventory Item Modal State
+    const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+    const [isItemModalOpen, setIsItemModalOpen] = useState(false);
 
-    const handleCloseModal = () => {
-        setSelectedSupplier(null);
-    };
-
+    // Supplier Modal Handlers
+    const handleSupplierSelect = (supplier: Supplier) => setSelectedSupplier(supplier);
+    const handleCloseSupplierModal = () => setSelectedSupplier(null);
     const handleSaveSupplier = (updatedSupplier: Supplier) => {
         setSuppliers(prev => prev.map(s => s.id === updatedSupplier.id ? updatedSupplier : s));
-        handleCloseModal();
+        handleCloseSupplierModal();
     };
+
+    // Inventory Item Modal Handlers
+    const handleSelectItem = (item: InventoryItem) => {
+        setSelectedItem(item);
+        setIsItemModalOpen(true);
+    };
+    const handleAddNewItem = () => {
+        setSelectedItem(null);
+        setIsItemModalOpen(true);
+    };
+    const handleCloseItemModal = () => {
+        setIsItemModalOpen(false);
+        setSelectedItem(null);
+    };
+    const handleSaveItem = (itemToSave: InventoryItem) => {
+        setInventoryItems(prev => {
+            const exists = prev.some(i => i.id === itemToSave.id);
+            return exists ? prev.map(i => (i.id === itemToSave.id ? itemToSave : i)) : [...prev, itemToSave];
+        });
+        handleCloseItemModal();
+    };
+    const handleDeleteItem = (id: number) => {
+        if (window.confirm('Are you sure you want to delete this item?')) {
+            setInventoryItems(prev => prev.filter(item => item.id !== id));
+            handleCloseItemModal();
+        }
+    };
+
 
     const renderContent = () => {
         switch (activeTab) {
             case 'inventory':
-                return <InventoryList items={inventoryItems} suppliers={suppliers} />;
+                return <InventoryList items={inventoryItems} suppliers={suppliers} onSelectItem={handleSelectItem} onAddItem={handleAddNewItem} />;
             case 'suppliers':
                 return <SupplierList suppliers={suppliers} onSelectSupplier={handleSupplierSelect} />;
             case 'purchase_orders':
@@ -271,19 +401,29 @@ export const Inventory: React.FC = () => {
                 <div className="flex border-b border-base-300">
                     <TabButton active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')}>Inventory</TabButton>
                     <TabButton active={activeTab === 'suppliers'} onClick={() => setActiveTab('suppliers')}>Suppliers</TabButton>
-                    {/* FIX: Replaced incorrect `Button` component with `TabButton` to resolve reference error. */}
                     <TabButton active={activeTab === 'purchase_orders'} onClick={() => setActiveTab('purchase_orders')}>Purchase Orders</TabButton>
                 </div>
                 <div>
                     {renderContent()}
                 </div>
             </div>
+
             {selectedSupplier && (
                 <SupplierDetailModal 
                     supplier={selectedSupplier}
                     items={inventoryItems}
-                    onClose={handleCloseModal}
+                    onClose={handleCloseSupplierModal}
                     onSave={handleSaveSupplier}
+                />
+            )}
+
+            {isItemModalOpen && (
+                 <InventoryItemModal 
+                    item={selectedItem}
+                    suppliers={suppliers}
+                    onClose={handleCloseItemModal}
+                    onSave={handleSaveItem}
+                    onDelete={handleDeleteItem}
                 />
             )}
         </>

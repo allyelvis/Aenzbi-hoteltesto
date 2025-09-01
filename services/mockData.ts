@@ -83,10 +83,12 @@ export const mockSuppliers: Supplier[] = [
 export const mockInventoryItems: InventoryItem[] = [
     { id: 101, name: 'Potatoes', category: 'Vegetable', quantityInStock: 50, unit: 'kg', reorderLevel: 20, supplierId: 1 },
     { id: 102, name: 'Tomatoes', category: 'Vegetable', quantityInStock: 30, unit: 'kg', reorderLevel: 15, supplierId: 1 },
-    { id: 201, name: 'Ribeye Steak', category: 'Meat', quantityInStock: 25, unit: 'units', reorderLevel: 10, supplierId: 2 },
-    { id: 202, name: 'Salmon Fillet', category: 'Fish', quantityInStock: 20, unit: 'units', reorderLevel: 10, supplierId: 2 },
-    { id: 301, name: 'Whiskey', category: 'Spirits', quantityInStock: 15, unit: 'liters', reorderLevel: 5, supplierId: 3 },
+    { id: 201, name: 'Ribeye Steak', category: 'Meat', quantityInStock: 25, unit: 'pcs', reorderLevel: 10, supplierId: 2 },
+    { id: 202, name: 'Salmon Fillet', category: 'Fish', quantityInStock: 20, unit: 'pcs', reorderLevel: 10, supplierId: 2 },
+    { id: 301, name: 'Whiskey', category: 'Spirits', quantityInStock: 15, unit: '750ml bottles', reorderLevel: 5, supplierId: 3 },
     { id: 302, name: 'Coffee Beans', category: 'Beverage', quantityInStock: 40, unit: 'kg', reorderLevel: 10, supplierId: 3 },
+    { id: 103, name: 'All-Purpose Flour', category: 'Dry Goods', quantityInStock: 100, unit: 'kg', reorderLevel: 25, supplierId: 1 },
+    { id: 303, name: 'House Red Wine', category: 'Wine', quantityInStock: 24, unit: 'bottles', reorderLevel: 12, supplierId: 3 },
 ];
 
 export const mockPurchaseOrders: PurchaseOrder[] = [
