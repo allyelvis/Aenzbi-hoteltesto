@@ -109,3 +109,12 @@ export interface PurchaseOrder {
     status: PurchaseOrderStatus;
     totalCost: number;
 }
+
+// New Interface for Tax Management
+export interface Tax {
+  id: number;
+  name: string;
+  type: 'percentage' | 'fixed';
+  value: number; // The percentage rate (e.g., 8 for 8%) or the fixed amount
+  enabled: boolean;
+}

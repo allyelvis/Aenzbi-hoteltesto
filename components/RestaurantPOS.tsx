@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { mockMenuItems, mockTables, mockOrders } from '../services/mockData';
-import { MenuItem, OrderItem, Table, TableStatus, Order } from '../types';
+import { mockMenuItems, mockTables, mockOrders, mockTaxes } from '../services/mockData';
+import { MenuItem, OrderItem, Table, TableStatus, Order, Tax } from '../types';
 import { generateMenuItemDescription } from '../services/geminiService';
 
 // Toast Notification Component
@@ -154,6 +154,100 @@ const MenuItemModal: React.FC<{
     );
 };
 
+// New Tax Management Modal
+const TaxManagementModal: React.FC<{
+    initialTaxes: Tax[];
+    onClose: () => void;
+    onSave: (taxes: Tax[]) => void;
+}> = ({ initialTaxes, onClose, onSave }) => {
+    const [localTaxes, setLocalTaxes] = useState<Tax[]>(() => JSON.parse(JSON.stringify(initialTaxes)));
+
+    const handleTaxChange = (id: number, field: keyof Tax, value: string | number | boolean) => {
+        setLocalTaxes(current =>
+            current.map(tax => (tax.id === id ? { ...tax, [field]: value } : tax))
+        );
+    };
+
+    const handleAddNew = () => {
+        const newTax: Tax = {
+            id: Date.now(),
+            name: 'New Tax',
+            type: 'percentage',
+            value: 0,
+            enabled: true,
+        };
+        setLocalTaxes(current => [...current, newTax]);
+    };
+
+    const handleDelete = (id: number) => {
+        setLocalTaxes(current => current.filter(tax => tax.id !== id));
+    };
+
+    const handleSave = () => {
+        onSave(localTaxes);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="tax-modal-title">
+            <div className="bg-base-200 rounded-lg shadow-xl p-8 w-full max-w-2xl">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-white" id="tax-modal-title">Tax Configuration</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl leading-none" aria-label="Close modal">&times;</button>
+                </div>
+
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-4 mb-4">
+                    <div className="grid grid-cols-12 gap-x-4 text-xs text-gray-400 font-bold uppercase px-2">
+                        <div className="col-span-1">On</div>
+                        <div className="col-span-5">Tax Name</div>
+                        <div className="col-span-3">Value</div>
+                        <div className="col-span-2">Type</div>
+                        <div className="col-span-1"></div>
+                    </div>
+                    {localTaxes.map(tax => (
+                        <div key={tax.id} className="grid grid-cols-12 gap-x-4 items-center bg-base-300 p-2 rounded-lg">
+                            <div className="col-span-1 flex items-center justify-center">
+                                <input
+                                    type="checkbox"
+                                    checked={tax.enabled}
+                                    onChange={e => handleTaxChange(tax.id, 'enabled', e.target.checked)}
+                                    className="toggle toggle-primary"
+                                />
+                            </div>
+                            <div className="col-span-5">
+                                <input type="text" value={tax.name} onChange={e => handleTaxChange(tax.id, 'name', e.target.value)} className="w-full bg-base-100 text-white p-2 rounded-md border border-secondary" />
+                            </div>
+                            <div className="col-span-3">
+                                <input type="number" step="0.01" value={tax.value} onChange={e => handleTaxChange(tax.id, 'value', parseFloat(e.target.value) || 0)} className="w-full bg-base-100 text-white p-2 rounded-md border border-secondary" />
+                            </div>
+                            <div className="col-span-2">
+                                <select value={tax.type} onChange={e => handleTaxChange(tax.id, 'type', e.target.value)} className="w-full bg-base-100 text-white p-2 rounded-md border border-secondary">
+                                    <option value="percentage">%</option>
+                                    <option value="fixed">$</option>
+                                </select>
+                            </div>
+                            <div className="col-span-1 text-center">
+                                <button onClick={() => handleDelete(tax.id)} className="text-gray-500 hover:text-error transition-colors" aria-label={`Delete ${tax.name}`}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <button onClick={handleAddNew} className="text-sm bg-secondary hover:bg-secondary-focus text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+                    Add New Tax
+                </button>
+
+                <div className="flex justify-end gap-4 pt-6 border-t border-base-300 mt-6">
+                    <button onClick={onClose} className="bg-secondary hover:bg-secondary-focus text-white font-bold py-2 px-6 rounded-lg transition-colors">Cancel</button>
+                    <button onClick={handleSave} className="bg-primary hover:bg-primary-focus text-white font-bold py-2 px-6 rounded-lg transition-colors">Save Taxes</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const MenuItemCard: React.FC<{ 
     item: MenuItem; 
@@ -190,20 +284,33 @@ const MenuItemCard: React.FC<{
 const OrderSummary: React.FC<{ 
     selectedTable: Table | null;
     order: Order | null;
+    activeTaxes: Tax[];
     onUpdateQuantity: (itemId: number, quantity: number) => void; 
     onRemoveItem: (itemId: number) => void; 
     onFinalizePayment: () => void;
-}> = ({ selectedTable, order, onUpdateQuantity, onRemoveItem, onFinalizePayment }) => {
-    const [editingItemId, setEditingItemId] = useState<number | null>(null);
+    onOpenTaxModal: () => void;
+}> = ({ selectedTable, order, activeTaxes, onUpdateQuantity, onRemoveItem, onFinalizePayment, onOpenTaxModal }) => {
     const subtotal = order?.items.reduce((acc, current) => acc + current.item.price * current.quantity, 0) || 0;
-    const tax = subtotal * 0.08;
-    const total = subtotal + tax;
+    
+    const appliedTaxes = activeTaxes.map(tax => {
+        const amount = tax.type === 'percentage' ? subtotal * (tax.value / 100) : tax.value;
+        return { ...tax, amount };
+    });
+
+    const totalTax = appliedTaxes.reduce((acc, tax) => acc + tax.amount, 0);
+    const total = subtotal + totalTax;
+
 
     return (
         <div className="bg-base-100 rounded-lg shadow-lg p-6 flex flex-col h-full">
-            <h3 className="text-2xl font-bold border-b border-base-300 pb-4 text-white">
-                {selectedTable ? `Table ${selectedTable.name} Order` : 'Select a Table'}
-            </h3>
+            <div className="flex justify-between items-center border-b border-base-300 pb-4">
+                 <h3 className="text-2xl font-bold text-white">
+                    {selectedTable ? `Table ${selectedTable.name} Order` : 'Select a Table'}
+                </h3>
+                <button onClick={onOpenTaxModal} className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-base-300 transition-colors" aria-label="Tax Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
+            </div>
             <div className="flex-grow overflow-y-auto my-4 pr-2">
                 {!order || order.items.length === 0 ? (
                     <p className="text-gray-400 text-center mt-8">
@@ -231,8 +338,15 @@ const OrderSummary: React.FC<{
             {order && order.items.length > 0 && (
                  <div className="border-t border-base-300 pt-4 space-y-2">
                     <div className="flex justify-between text-gray-300"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-                    <div className="flex justify-between text-gray-300"><span>Tax (8%)</span><span>${tax.toFixed(2)}</span></div>
-                    <div className="flex justify-between text-white font-bold text-xl"><span>Total</span><span>${total.toFixed(2)}</span></div>
+                    
+                    {appliedTaxes.map(tax => (
+                        <div key={tax.id} className="flex justify-between text-gray-300 text-sm">
+                            <span>{tax.name} {tax.type === 'percentage' && `(${tax.value}%)`}</span>
+                            <span>+ ${tax.amount.toFixed(2)}</span>
+                        </div>
+                    ))}
+                    
+                    <div className="flex justify-between text-white font-bold text-xl pt-2 mt-2 border-t border-white/10"><span>Total</span><span>${total.toFixed(2)}</span></div>
                     <button onClick={onFinalizePayment} className="w-full bg-primary hover:bg-primary-focus text-white font-bold py-3 rounded-lg mt-4 transition-colors">
                         Finalize Payment
                     </button>
@@ -326,9 +440,11 @@ export const RestaurantPOS: React.FC = () => {
     const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
     const [tables, setTables] = useState<Table[]>(mockTables);
     const [orders, setOrders] = useState<Order[]>(mockOrders);
+    const [taxes, setTaxes] = useState<Tax[]>(mockTaxes);
     const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
     const [activeView, setActiveView] = useState<'floorplan' | 'menu'>('floorplan');
-    const [modalState, setModalState] = useState<{isOpen: boolean; item: MenuItem | null}>({isOpen: false, item: null});
+    const [menuModalState, setMenuModalState] = useState<{isOpen: boolean; item: MenuItem | null}>({isOpen: false, item: null});
+    const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
 
     const selectedTable = tables.find(t => t.id === selectedTableId) || null;
@@ -383,20 +499,26 @@ export const RestaurantPOS: React.FC = () => {
         setActiveView('floorplan');
     };
     
-    const handleOpenModal = (item: MenuItem | null) => setModalState({ isOpen: true, item });
-    const handleCloseModal = () => setModalState({ isOpen: false, item: null });
+    const handleOpenMenuModal = (item: MenuItem | null) => setMenuModalState({ isOpen: true, item });
+    const handleCloseMenuModal = () => setMenuModalState({ isOpen: false, item: null });
 
     const handleSaveItem = (savedItem: MenuItem) => {
         setMenuItems(prevItems => {
             const exists = prevItems.some(item => item.id === savedItem.id);
             return exists ? prevItems.map(item => (item.id === savedItem.id ? savedItem : item)) : [...prevItems, savedItem];
         });
-        handleCloseModal();
+        handleCloseMenuModal();
     };
     
     const handleDeleteItem = (id: number) => {
         setMenuItems(prev => prev.filter(item => item.id !== id));
-        handleCloseModal();
+        handleCloseMenuModal();
+    };
+
+    const handleSaveTaxes = (updatedTaxes: Tax[]) => {
+        setTaxes(updatedTaxes);
+        setIsTaxModalOpen(false);
+        setToastMessage("Tax settings updated.");
     };
 
     return (
@@ -412,26 +534,35 @@ export const RestaurantPOS: React.FC = () => {
                         {activeView === 'floorplan' ? (
                             <FloorPlanView tables={tables} onSelectTable={handleSelectTable} selectedTableId={selectedTableId} />
                         ) : (
-                            <MenuView menuItems={menuItems} onAddToOrder={handleAddToOrder} onOpenModal={handleOpenModal} />
+                            <MenuView menuItems={menuItems} onAddToOrder={handleAddToOrder} onOpenModal={handleOpenMenuModal} />
                         )}
                     </div>
                 </div>
                 <div className="w-1/3">
                     <OrderSummary 
                         selectedTable={selectedTable} 
-                        order={currentOrder} 
+                        order={currentOrder}
+                        activeTaxes={taxes.filter(t => t.enabled)}
                         onUpdateQuantity={handleUpdateQuantity} 
                         onRemoveItem={handleRemoveItem} 
                         onFinalizePayment={handleFinalizePayment}
+                        onOpenTaxModal={() => setIsTaxModalOpen(true)}
                     />
                 </div>
             </div>
-            {modalState.isOpen && (
+            {menuModalState.isOpen && (
                 <MenuItemModal
-                    item={modalState.item}
-                    onClose={handleCloseModal}
+                    item={menuModalState.item}
+                    onClose={handleCloseMenuModal}
                     onSave={handleSaveItem}
                     onDelete={handleDeleteItem}
+                />
+            )}
+             {isTaxModalOpen && (
+                <TaxManagementModal
+                    initialTaxes={taxes}
+                    onClose={() => setIsTaxModalOpen(false)}
+                    onSave={handleSaveTaxes}
                 />
             )}
         </>

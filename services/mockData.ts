@@ -1,4 +1,4 @@
-import { Room, RoomStatus, MenuItem, Sale, Supplier, InventoryItem, PurchaseOrder, PurchaseOrderStatus, Table, TableStatus, Order } from '../types';
+import { Room, RoomStatus, MenuItem, Sale, Supplier, InventoryItem, PurchaseOrder, PurchaseOrderStatus, Table, TableStatus, Order, Tax } from '../types';
 
 const today = new Date();
 const tomorrow = new Date(today);
@@ -108,4 +108,11 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
         status: PurchaseOrderStatus.Pending,
         totalCost: 300
     },
+];
+
+// New Mock Data for Tax Management
+export const mockTaxes: Tax[] = [
+  { id: 1, name: 'Sales Tax', type: 'percentage', value: 8, enabled: true },
+  { id: 2, name: 'Service Charge', type: 'percentage', value: 10, enabled: false },
+  { id: 3, name: 'Tourism Fee', type: 'fixed', value: 1.50, enabled: false },
 ];
