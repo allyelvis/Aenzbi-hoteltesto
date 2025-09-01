@@ -1,4 +1,3 @@
-
 export enum Page {
     Dashboard = 'dashboard',
     POS = 'pos',
@@ -44,6 +43,31 @@ export interface Sale {
     items: { name: string; category: string; quantity: number; price: number }[];
     total: number;
 }
+
+// New Interfaces for Restaurant Table Management
+export enum TableStatus {
+    Available = 'Available',
+    Occupied = 'Occupied',
+    Reserved = 'Reserved',
+}
+
+export interface Table {
+    id: number;
+    name: string;
+    capacity: number;
+    status: TableStatus;
+    x: number; // position percentage from left
+    y: number; // position percentage from top
+    shape: 'square' | 'circle';
+}
+
+export interface Order {
+    id: string; // e.g., ORD-001
+    tableId: number;
+    items: OrderItem[];
+    status: 'Open' | 'Paid' | 'Cancelled';
+}
+
 
 // New Interfaces for Inventory Management
 export interface Supplier {

@@ -1,5 +1,4 @@
-
-import { Room, RoomStatus, MenuItem, Sale, Supplier, InventoryItem, PurchaseOrder, PurchaseOrderStatus } from '../types';
+import { Room, RoomStatus, MenuItem, Sale, Supplier, InventoryItem, PurchaseOrder, PurchaseOrderStatus, Table, TableStatus, Order } from '../types';
 
 const today = new Date();
 const tomorrow = new Date(today);
@@ -37,6 +36,41 @@ export const mockSales: Sale[] = [
     { id: 'S003', date: '2023-10-28T19:00:00Z', items: [{ name: 'Cheesecake', category: 'Dessert', quantity: 2, price: 9.00 }, { name: 'Espresso', category: 'Beverage', quantity: 2, price: 4.00 }], total: 26.00 },
     { id: 'S004', date: '2023-10-29T20:15:00Z', items: [{ name: 'Ribeye Steak', category: 'Main Course', quantity: 1, price: 35.00 }], total: 35.00 },
 ];
+
+// New Mock Data for Table Management
+export const mockTables: Table[] = [
+    { id: 1, name: 'T1', capacity: 2, status: TableStatus.Occupied, x: 10, y: 15, shape: 'circle' },
+    { id: 2, name: 'T2', capacity: 2, status: TableStatus.Available, x: 30, y: 15, shape: 'circle' },
+    { id: 3, name: 'T3', capacity: 4, status: TableStatus.Available, x: 10, y: 40, shape: 'square' },
+    { id: 4, name: 'T4', capacity: 4, status: TableStatus.Reserved, x: 30, y: 40, shape: 'square' },
+    { id: 5, name: 'T5', capacity: 6, status: TableStatus.Available, x: 10, y: 70, shape: 'square' },
+    { id: 6, name: 'B1', capacity: 4, status: TableStatus.Occupied, x: 60, y: 20, shape: 'square' },
+    { id: 7, name: 'B2', capacity: 4, status: TableStatus.Available, x: 80, y: 20, shape: 'square' },
+    { id: 8, name: 'P1', capacity: 8, status: TableStatus.Available, x: 70, y: 65, shape: 'circle' },
+];
+
+export const mockOrders: Order[] = [
+    {
+        id: 'ORD-001',
+        tableId: 1,
+        status: 'Open',
+        items: [
+            { item: mockMenuItems[2], quantity: 1 }, // Ribeye Steak
+            { item: mockMenuItems[6], quantity: 1 }, // Old Fashioned
+        ]
+    },
+    {
+        id: 'ORD-002',
+        tableId: 6,
+        status: 'Open',
+        items: [
+            { item: mockMenuItems[3], quantity: 2 }, // Salmon Fillet
+            { item: mockMenuItems[1], quantity: 1 }, // Bruschetta
+            { item: mockMenuItems[4], quantity: 2 }, // Cheesecake
+        ]
+    }
+];
+
 
 // New Mock Data for Inventory Management
 

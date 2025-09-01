@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { mockMenuItems } from '../services/mockData';
-import { MenuItem, OrderItem } from '../types';
+import { mockMenuItems, mockTables, mockOrders } from '../services/mockData';
+import { MenuItem, OrderItem, Table, TableStatus, Order } from '../types';
 import { generateMenuItemDescription } from '../services/geminiService';
 
 // Toast Notification Component
@@ -163,7 +163,6 @@ const MenuItemCard: React.FC<{
     <div 
         className="bg-base-100 rounded-lg overflow-hidden shadow-lg group relative transform hover:scale-105 transition-transform duration-200"
     >
-        {/* Clickable area for adding to order */}
         <div 
             className="cursor-pointer"
             onClick={() => onAddToOrder(item)}
@@ -175,8 +174,6 @@ const MenuItemCard: React.FC<{
                 <p className="mt-2 text-primary font-semibold">${item.price.toFixed(2)}</p>
             </div>
         </div>
-
-        {/* Edit Button */}
         <button 
             onClick={() => onEdit(item)}
             className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
@@ -190,30 +187,30 @@ const MenuItemCard: React.FC<{
     </div>
 );
 
-const OrderSummary: React.FC<{ orderItems: OrderItem[]; onUpdateQuantity: (id: number, quantity: number) => void; onRemoveItem: (id: number) => void; onClear: () => void }> = ({ orderItems, onUpdateQuantity, onRemoveItem, onClear }) => {
+const OrderSummary: React.FC<{ 
+    selectedTable: Table | null;
+    order: Order | null;
+    onUpdateQuantity: (itemId: number, quantity: number) => void; 
+    onRemoveItem: (itemId: number) => void; 
+    onFinalizePayment: () => void;
+}> = ({ selectedTable, order, onUpdateQuantity, onRemoveItem, onFinalizePayment }) => {
     const [editingItemId, setEditingItemId] = useState<number | null>(null);
-    const subtotal = orderItems.reduce((acc, current) => acc + current.item.price * current.quantity, 0);
+    const subtotal = order?.items.reduce((acc, current) => acc + current.item.price * current.quantity, 0) || 0;
     const tax = subtotal * 0.08;
     const total = subtotal + tax;
 
-    const handleQuantityBlur = () => {
-        setEditingItemId(null);
-    };
-
-    const handleQuantityKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            setEditingItemId(null);
-        }
-    };
-
     return (
         <div className="bg-base-100 rounded-lg shadow-lg p-6 flex flex-col h-full">
-            <h3 className="text-2xl font-bold border-b border-base-300 pb-4 text-white">Current Order</h3>
+            <h3 className="text-2xl font-bold border-b border-base-300 pb-4 text-white">
+                {selectedTable ? `Table ${selectedTable.name} Order` : 'Select a Table'}
+            </h3>
             <div className="flex-grow overflow-y-auto my-4 pr-2">
-                {orderItems.length === 0 ? (
-                    <p className="text-gray-400 text-center mt-8">Click an item to add to the order.</p>
+                {!order || order.items.length === 0 ? (
+                    <p className="text-gray-400 text-center mt-8">
+                        {selectedTable ? 'Add items from the menu.' : 'Select a table from the floor plan to start an order.'}
+                    </p>
                 ) : (
-                    orderItems.map(({ item, quantity }) => (
+                    order.items.map(({ item, quantity }) => (
                         <div key={item.id} className="flex justify-between items-center py-3 border-b border-base-300 group">
                             <div>
                                 <p className="font-semibold text-white">{item.name}</p>
@@ -221,24 +218,7 @@ const OrderSummary: React.FC<{ orderItems: OrderItem[]; onUpdateQuantity: (id: n
                             </div>
                             <div className="flex items-center gap-2">
                                 <button onClick={() => onUpdateQuantity(item.id, Math.max(1, quantity - 1))} className="w-6 h-6 bg-secondary rounded flex items-center justify-center text-lg">-</button>
-                                {editingItemId === item.id ? (
-                                    <input
-                                        type="number"
-                                        value={quantity}
-                                        onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 0)}
-                                        onBlur={handleQuantityBlur}
-                                        onKeyDown={handleQuantityKeyDown}
-                                        autoFocus
-                                        className="w-12 text-center bg-base-300 text-white font-semibold rounded-md border border-secondary"
-                                    />
-                                ) : (
-                                    <span 
-                                        onClick={() => setEditingItemId(item.id)} 
-                                        className="px-3 font-semibold cursor-pointer min-w-[2rem] text-center"
-                                    >
-                                        {quantity}
-                                    </span>
-                                )}
+                                <span className="px-3 font-semibold min-w-[2rem] text-center">{quantity}</span>
                                 <button onClick={() => onUpdateQuantity(item.id, quantity + 1)} className="w-6 h-6 bg-secondary rounded flex items-center justify-center text-lg">+</button>
                                 <button onClick={() => onRemoveItem(item.id)} className="ml-1 text-gray-500 hover:text-error transition-colors opacity-0 group-hover:opacity-100" aria-label="Remove item">
                                     &times;
@@ -248,16 +228,13 @@ const OrderSummary: React.FC<{ orderItems: OrderItem[]; onUpdateQuantity: (id: n
                     ))
                 )}
             </div>
-            {orderItems.length > 0 && (
+            {order && order.items.length > 0 && (
                  <div className="border-t border-base-300 pt-4 space-y-2">
                     <div className="flex justify-between text-gray-300"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
                     <div className="flex justify-between text-gray-300"><span>Tax (8%)</span><span>${tax.toFixed(2)}</span></div>
                     <div className="flex justify-between text-white font-bold text-xl"><span>Total</span><span>${total.toFixed(2)}</span></div>
-                    <button className="w-full bg-primary hover:bg-primary-focus text-white font-bold py-3 rounded-lg mt-4 transition-colors">
+                    <button onClick={onFinalizePayment} className="w-full bg-primary hover:bg-primary-focus text-white font-bold py-3 rounded-lg mt-4 transition-colors">
                         Finalize Payment
-                    </button>
-                    <button onClick={onClear} className="w-full bg-error hover:bg-red-700 text-white font-bold py-2 rounded-lg mt-2 transition-colors">
-                        Clear Order
                     </button>
                 </div>
             )}
@@ -265,59 +242,154 @@ const OrderSummary: React.FC<{ orderItems: OrderItem[]; onUpdateQuantity: (id: n
     );
 };
 
-export const RestaurantPOS: React.FC = () => {
-    const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
-    const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+const getTableStatusColor = (status: TableStatus): string => {
+    switch(status) {
+        case TableStatus.Available: return "bg-green-500/20 border-2 border-green-500 text-green-300 hover:bg-green-500/40";
+        case TableStatus.Occupied: return "bg-blue-500/20 border-2 border-blue-500 text-blue-300 hover:bg-blue-500/40";
+        case TableStatus.Reserved: return "bg-yellow-500/20 border-2 border-yellow-500 text-yellow-300 hover:bg-yellow-500/40";
+        default: return "bg-gray-500/20 border-2 border-gray-500 text-gray-300";
+    }
+}
+
+const FloorPlanView: React.FC<{ tables: Table[], onSelectTable: (tableId: number) => void, selectedTableId: number | null }> = ({ tables, onSelectTable, selectedTableId }) => (
+    <div className="bg-base-200 p-4 rounded-lg h-full relative">
+        {tables.map(table => (
+            <div
+                key={table.id}
+                onClick={() => onSelectTable(table.id)}
+                style={{ left: `${table.x}%`, top: `${table.y}%`, width: table.shape === 'square' ? '12%' : '10%', paddingBottom: table.shape === 'square' ? '12%' : '10%' }}
+                className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 ${table.shape === 'circle' ? 'rounded-full' : 'rounded-lg'} ${getTableStatusColor(table.status)} ${selectedTableId === table.id ? 'ring-4 ring-primary ring-offset-2 ring-offset-base-200' : ''}`}
+            >
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-bold text-lg">{table.name}</span>
+                    <span className="text-xs">({table.capacity} seats)</span>
+                </div>
+            </div>
+        ))}
+    </div>
+);
+
+const MenuView: React.FC<{ 
+    menuItems: MenuItem[], 
+    onAddToOrder: (item: MenuItem) => void, 
+    onOpenModal: (item: MenuItem | null) => void 
+}> = ({ menuItems, onAddToOrder, onOpenModal }) => {
     const [filter, setFilter] = useState<'All' | 'Appetizer' | 'Main Course' | 'Dessert' | 'Beverage'>('All');
     const [searchTerm, setSearchTerm] = useState('');
+    
+    const filteredItems = menuItems
+        .filter(item => filter === 'All' || item.category === filter)
+        .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+    const categories: ('All' | 'Appetizer' | 'Main Course' | 'Dessert' | 'Beverage')[] = ['All', 'Appetizer', 'Main Course', 'Dessert', 'Beverage'];
+
+    return (
+        <div className="flex flex-col h-full">
+            <div className="mb-4 flex flex-wrap gap-2 items-center">
+                <div className="relative flex-grow">
+                     <input 
+                        type="text"
+                        placeholder="Search menu items..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full bg-base-100 p-2 rounded-lg border border-secondary pl-10"
+                    />
+                    <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <button onClick={() => onOpenModal(null)} className="bg-primary hover:bg-primary-focus text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+                    New Item
+                </button>
+            </div>
+            <div className="mb-4 flex space-x-2">
+                {categories.map(cat => (
+                    <button key={cat} onClick={() => setFilter(cat)} className={`px-4 py-2 rounded-lg font-semibold transition-colors text-sm ${filter === cat ? 'bg-primary text-white' : 'bg-base-100 hover:bg-base-300'}`}>
+                        {cat}
+                    </button>
+                ))}
+            </div>
+            <div className="flex-grow overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredItems.map(item => (
+                    <MenuItemCard 
+                        key={item.id} 
+                        item={item} 
+                        onAddToOrder={onAddToOrder} 
+                        onEdit={() => onOpenModal(item)}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export const RestaurantPOS: React.FC = () => {
+    const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
+    const [tables, setTables] = useState<Table[]>(mockTables);
+    const [orders, setOrders] = useState<Order[]>(mockOrders);
+    const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
+    const [activeView, setActiveView] = useState<'floorplan' | 'menu'>('floorplan');
     const [modalState, setModalState] = useState<{isOpen: boolean; item: MenuItem | null}>({isOpen: false, item: null});
     const [toastMessage, setToastMessage] = useState('');
 
+    const selectedTable = tables.find(t => t.id === selectedTableId) || null;
+    const currentOrder = orders.find(o => o.tableId === selectedTableId && o.status === 'Open') || null;
+
+    const handleSelectTable = (tableId: number) => {
+        setSelectedTableId(tableId);
+        const table = tables.find(t => t.id === tableId);
+        if (table?.status === TableStatus.Available) {
+            const newOrder: Order = { id: `ORD-${Date.now()}`, tableId, items: [], status: 'Open' };
+            setOrders(prev => [...prev, newOrder]);
+            setTables(prev => prev.map(t => t.id === tableId ? { ...t, status: TableStatus.Occupied } : t));
+        }
+        setActiveView('menu');
+    };
+
     const handleAddToOrder = (item: MenuItem) => {
-        setOrderItems(prev => {
-            const existing = prev.find(orderItem => orderItem.item.id === item.id);
+        if (!selectedTableId || !currentOrder) {
+            setToastMessage("Please select a table first!");
+            setActiveView('floorplan');
+            return;
+        }
+        setOrders(prev => prev.map(order => {
+            if (order.id !== currentOrder.id) return order;
+            const existing = order.items.find(i => i.item.id === item.id);
             if (existing) {
-                return prev.map(orderItem =>
-                    orderItem.item.id === item.id ? { ...orderItem, quantity: orderItem.quantity + 1 } : orderItem
-                );
+                return { ...order, items: order.items.map(i => i.item.id === item.id ? { ...i, quantity: i.quantity + 1 } : i) };
             }
-            return [...prev, { item, quantity: 1 }];
-        });
+            return { ...order, items: [...order.items, { item, quantity: 1 }] };
+        }));
         setToastMessage(`${item.name} added to order`);
     };
 
-    const handleUpdateQuantity = (id: number, quantity: number) => {
-        setOrderItems(prev => 
-            prev.map(orderItem => orderItem.item.id === id ? { ...orderItem, quantity } : orderItem)
-            .filter(orderItem => orderItem.quantity > 0)
-        );
+    const handleUpdateQuantity = (itemId: number, quantity: number) => {
+        if (!currentOrder) return;
+        setOrders(prev => prev.map(o => o.id === currentOrder.id 
+            ? { ...o, items: o.items.map(i => i.item.id === itemId ? { ...i, quantity } : i).filter(i => i.quantity > 0) } 
+            : o
+        ));
     };
 
-    const handleRemoveItem = (id: number) => {
-        setOrderItems(prev => prev.filter(orderItem => orderItem.item.id !== id));
+    const handleRemoveItem = (itemId: number) => {
+        handleUpdateQuantity(itemId, 0);
     };
 
-    const handleClearOrder = () => {
-      setOrderItems([]);
-    }
+    const handleFinalizePayment = () => {
+        if (!selectedTableId || !currentOrder) return;
+        setOrders(prev => prev.map(o => o.id === currentOrder.id ? { ...o, status: 'Paid' } : o));
+        setTables(prev => prev.map(t => t.id === selectedTableId ? { ...t, status: TableStatus.Available } : t));
+        setToastMessage(`Payment for Table ${selectedTable?.name} finalized.`);
+        setSelectedTableId(null);
+        setActiveView('floorplan');
+    };
     
-    const handleOpenModal = (item: MenuItem | null) => {
-        setModalState({ isOpen: true, item: item });
-    };
-
-    const handleCloseModal = () => {
-        setModalState({ isOpen: false, item: null });
-    };
+    const handleOpenModal = (item: MenuItem | null) => setModalState({ isOpen: true, item });
+    const handleCloseModal = () => setModalState({ isOpen: false, item: null });
 
     const handleSaveItem = (savedItem: MenuItem) => {
         setMenuItems(prevItems => {
             const exists = prevItems.some(item => item.id === savedItem.id);
-            if (exists) {
-                // Update existing item
-                return prevItems.map(item => (item.id === savedItem.id ? savedItem : item));
-            }
-            // Add new item
-            return [...prevItems, savedItem];
+            return exists ? prevItems.map(item => (item.id === savedItem.id ? savedItem : item)) : [...prevItems, savedItem];
         });
         handleCloseModal();
     };
@@ -327,53 +399,31 @@ export const RestaurantPOS: React.FC = () => {
         handleCloseModal();
     };
 
-    const filteredItems = menuItems
-        .filter(item => filter === 'All' || item.category === filter)
-        .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
-        
-    const categories: ('All' | 'Appetizer' | 'Main Course' | 'Dessert' | 'Beverage')[] = ['All', 'Appetizer', 'Main Course', 'Dessert', 'Beverage'];
-
     return (
         <>
             {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage('')} />}
             <div className="flex h-[calc(100vh-10rem)] gap-6">
                 <div className="w-2/3 flex flex-col">
-                    <div className="mb-4 flex flex-wrap gap-2 items-center">
-                        <div className="relative flex-grow">
-                             <input 
-                                type="text"
-                                placeholder="Search menu items..."
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full bg-base-100 p-2 rounded-lg border border-secondary pl-10"
-                            />
-                            <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        </div>
-                        <button onClick={() => handleOpenModal(null)} className="bg-primary hover:bg-primary-focus text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
-                            New Item
-                        </button>
+                    <div className="flex border-b border-base-300 mb-4">
+                        <button onClick={() => setActiveView('floorplan')} className={`px-4 py-2 font-semibold transition-colors ${activeView === 'floorplan' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Floor Plan</button>
+                        <button onClick={() => setActiveView('menu')} className={`px-4 py-2 font-semibold transition-colors ${activeView === 'menu' ? 'text-primary border-b-2 border-primary' : 'text-gray-400'}`}>Menu Items</button>
                     </div>
-                     <div className="mb-4 flex space-x-2">
-                        {categories.map(cat => (
-                            <button key={cat} onClick={() => setFilter(cat)} className={`px-4 py-2 rounded-lg font-semibold transition-colors text-sm ${filter === cat ? 'bg-primary text-white' : 'bg-base-100 hover:bg-base-300'}`}>
-                                {cat}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex-grow overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredItems.map(item => (
-                            <MenuItemCard 
-                                key={item.id} 
-                                item={item} 
-                                onAddToOrder={handleAddToOrder} 
-                                onEdit={() => handleOpenModal(item)}
-                            />
-                        ))}
+                    <div className="flex-grow">
+                        {activeView === 'floorplan' ? (
+                            <FloorPlanView tables={tables} onSelectTable={handleSelectTable} selectedTableId={selectedTableId} />
+                        ) : (
+                            <MenuView menuItems={menuItems} onAddToOrder={handleAddToOrder} onOpenModal={handleOpenModal} />
+                        )}
                     </div>
                 </div>
                 <div className="w-1/3">
-                    <OrderSummary orderItems={orderItems} onUpdateQuantity={handleUpdateQuantity} onRemoveItem={handleRemoveItem} onClear={handleClearOrder} />
+                    <OrderSummary 
+                        selectedTable={selectedTable} 
+                        order={currentOrder} 
+                        onUpdateQuantity={handleUpdateQuantity} 
+                        onRemoveItem={handleRemoveItem} 
+                        onFinalizePayment={handleFinalizePayment}
+                    />
                 </div>
             </div>
             {modalState.isOpen && (
